@@ -1,0 +1,12 @@
+*.ipynb_checkpoints*
+*__pycache__*
+*java.log*
+*.pdf
+*.dat
+
+# blacklist all files starting with .
+/.*
+
+# Whitelist some files (exceptions to the previous rule)
+!.gitignore
+!README.md
