@@ -2,6 +2,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 import pyqtgraph as pg
 
 from gui.plot_widget import CustomPlotWidget
+
 # class CustomPlotWidget(pg.PlotWidget):
 #     def __init__(self, parent=None, **kwargs):
 #         super().__init__(parent=parent, **kwargs)

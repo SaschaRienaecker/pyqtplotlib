@@ -2,7 +2,6 @@ import sys
 import numpy as np
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QToolBar, QAction, QWidget
 from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QFormLayout, QGroupBox, QSpinBox
-from PyQt5.QtChart import QChart, QChartView, QScatterSeries, QLineSeries
 from PyQt5.QtGui import QPainter, QIcon
 from PyQt5.QtCore import Qt, QPointF, QRectF
 
