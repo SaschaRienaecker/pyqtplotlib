@@ -2,15 +2,23 @@ import sys
 import numpy as np
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QToolBar, QAction, QWidget
 from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QFormLayout, QGroupBox, QSpinBox
-from PyQt5.QtGui import QPainter, QIcon
+from PyQt5.QtWidgets import QShortcut
+from PyQt5.QtGui import QPainter, QIcon, QKeySequence
 from PyQt5.QtCore import Qt, QPointF, QRectF
-
 from gui.plot_widget import CustomPlotWidget
+from gui.shortcut_window import ShortcutWindow
+import signal
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        self.shortcuts = [] # placeholder for adding shortcuts
+        self.shortcut_window = None # placeholder for shortcut window
+
+        # Register the signal handler for keyboard interrupt (Ctrl+C)
+        signal.signal(signal.SIGINT, signal.SIG_DFL)
+        
         self.setWindowTitle("")
 
         # Set the default window size
@@ -93,7 +101,6 @@ class MainWindow(QMainWindow):
     def mousePressEvent(self, event):
         self.origin = event.pos()
 
-
     def mouseMoveEvent(self, event):
         pass
 
@@ -106,10 +113,54 @@ class MainWindow(QMainWindow):
     def wheelEvent(self, event):
         pass
 
+    def add_shortcut(self, key_sequence, slot):
+        shortcut = QShortcut(QKeySequence(key_sequence), self)
+        shortcut.activated.connect(slot)
+        shortcut.setProperty("Description", slot.__doc__)
+        self.shortcuts.append(shortcut)
+
+    def display_shortcuts(self):
+        # display list of available shortcuts
+        # import pandas as pd
+        # from PyQt5.QtGui import QStandardItemModel, QStandardItem
+        # from PyQt5.QtWidgets import QTableView, QVBoxLayout
+        # df = pd.DataFrame([(shortcut.key().toString(), shortcut.property(
+        #     "Description")) for shortcut in self.shortcuts], columns=["Shortcut", "Description"])
+        # model = QStandardItemModel(df.shape[0], df.shape[1], self)
+        # model.setHorizontalHeaderLabels(df.columns)
+        # for row in range(df.shape[0]):
+        #     for col in range(df.shape[1]):
+        #         item = QStandardItem(str(df.iat[row, col]))
+        #         model.setItem(row, col, item)
+        # view = QTableView(self)
+        # view.setModel(model)
+        # view.resizeColumnsToContents()
+        # layout = QVBoxLayout()
+        # layout.addWidget(view)
+        # widget = QWidget()
+        # widget.setLayout(layout)
+
+        # self.shortcut_widget = widget
+        # self.shortcut_widget.setVisible(True)
+        # self.setCentralWidget(widget)
+        if self.shortcut_window is None:
+            self.shortcut_window = ShortcutWindow(self.shortcuts)
+        self.shortcut_window.show()
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
-            pass
+            self.display_shortcuts()
+        else:
+            super().keyPressEvent(event)
+
+
+    def keyReleaseEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            if self.shortcut_window is not None:
+                self.shortcut_window.hide()
+        else:
+            super().keyReleaseEvent(event)
+
 
 
 if __name__ == "__main__":
@@ -118,5 +169,14 @@ if __name__ == "__main__":
     x = [0, 1, 2, 3, 4]
     y = [0, 1, 4, 9, 16]
     window.plot_widget.plot(x, y, pen='r', symbol='o', name='data1')
+
+
+    # adding a shortcut test
+    def my_slot():
+        """Prints out something."""
+        print("Shortcut triggered!")
+    window.add_shortcut("Ctrl+Shift+T", my_slot)
+
+
     window.show()
     sys.exit(app.exec_())
