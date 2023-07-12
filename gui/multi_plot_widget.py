@@ -1,6 +1,5 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
-import pyqtgraph as pg
-
+import numpy as np
 from gui.plot_widget import CustomPlotWidget
 
 # class CustomPlotWidget(pg.PlotWidget):
@@ -42,10 +41,15 @@ class MultiCustomPlotWidget(QtWidgets.QWidget):
             layout.addWidget(v_splitter, i, 0, 1, 3)
 
         # Add 9 CustomPlotWidget instances to the layout
+
+        self.plot_widgets = np.empty((3, 3), dtype=object)
+
         for i in range(3):
             for j in range(3):
                 plot_widget = CustomPlotWidget()
                 row_splitters[i].addWidget(plot_widget)
+                self.plot_widgets[i, j] = plot_widget
+
 
         # Create a horizontal splitter for the entire layout
         h_splitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
@@ -62,18 +66,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setGeometry(100, 100, 1200, 900)
 
         # Create the main widget and set it as the central widget
-        main_widget = MultiCustomPlotWidget()
-        self.setCentralWidget(main_widget)
+        self.main_widget = MultiCustomPlotWidget()
+        self.setCentralWidget(self.main_widget)
 
         # Get all child widgets of the main window
-        child_widgets = self.findChildren(QtWidgets.QWidget)
+        # child_widgets = self.findChildren(QtWidgets.QWidget)
 
         # Filter the child widgets to only get instances of CustomPlotWidget
-        custom_plot_widgets = [
-            w for w in child_widgets if isinstance(w, CustomPlotWidget)]
-
+        # self.custom_plot_widgets = [
+            # w for w in child_widgets if isinstance(w, CustomPlotWidget)]
+        
         # Do something with the list of CustomPlotWidget instances
-        for plot_widget in custom_plot_widgets:
+        for plot_widget in self.main_widget.plot_widgets.flatten():
             x = np.linspace(0, 10, 100)
             y = np.random.rand(100)
             plot_widget.plot(x, y)
@@ -88,6 +92,7 @@ class MainWindow(QtWidgets.QMainWindow):
 if __name__ == "__main__":
     import sys
     import numpy as np
+    from PyQt5 import QtWidgets
     app = QtWidgets.QApplication(sys.argv)
     window = MainWindow()
     window.show()

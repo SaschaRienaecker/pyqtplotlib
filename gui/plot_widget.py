@@ -39,6 +39,8 @@ class CustomPlotWidget(pg.PlotWidget):
 
         self.plot_item.scene().sigMouseMoved.connect(self.hoveredEvent)
 
+        self.apply_matplotlib_color_cycle()
+
     def hoveredEvent(self, pos):
 
         # Map the mouse cursor position to the plot's coordinate system
@@ -54,6 +56,57 @@ class CustomPlotWidget(pg.PlotWidget):
         x_data = item.xData
         y_data = item.yData
         return x_data, y_data
+
+
+    def plot(self, *args, **kwargs):
+        # Translate Matplotlib-style arguments to Pyqtgraph-style arguments
+        if 'color' in kwargs:
+            kwargs['pen'] = pg.mkPen(kwargs['color'])
+            del kwargs['color']
+        else:
+            # Get the number of PlotDataItem instances attached to the PlotWidget
+            num_items = len([item for item in self.getPlotItem().items if isinstance(item, pg.PlotDataItem)])
+            # Get the next color from the color cycle
+            col = self.color_cycle[num_items % len(self.color_cycle)]
+            print(col)
+            kwargs['pen'] = pg.mkPen(col)
+
+        if 'linestyle' in kwargs:
+            if kwargs['linestyle'] == '-':
+                kwargs['pen'] = pg.mkPen(kwargs.get('pen', None), width=1)
+            elif kwargs['linestyle'] == '--':
+                kwargs['pen'] = pg.mkPen(kwargs.get('pen', None), width=1, style=pg.QtCore.Qt.DashLine)
+            elif kwargs['linestyle'] == ':':
+                kwargs['pen'] = pg.mkPen(kwargs.get('pen', None), width=1, style=pg.QtCore.Qt.DotLine)
+            elif kwargs['linestyle'] == '-.':
+                kwargs['pen'] = pg.mkPen(kwargs.get('pen', None), width=1, style=pg.QtCore.Qt.DashDotLine)
+            del kwargs['linestyle']
+        if 'marker' in kwargs:
+            brush = pg.mkBrush(kwargs.get('color', 'k'))
+            pen = pg.mkPen(kwargs.get('markeredgecolor', 'k'), width=1)
+            size = kwargs.get('markersize', 8)
+            if kwargs['marker'] == 'o':
+                kwargs['symbol'] = 'o'
+                kwargs['symbolBrush'] = brush
+                kwargs['symbolPen'] = pen
+                kwargs['size'] = size
+            elif kwargs['marker'] == 's':
+                kwargs['symbol'] = 's'
+                kwargs['symbolBrush'] = brush
+                kwargs['symbolPen'] = pen
+                kwargs['size'] = size
+            del kwargs['marker']
+
+        # Call the original plot() method with translated arguments
+        self.plot_item.plot(*args, **kwargs)
+
+
+    def apply_matplotlib_color_cycle(self):
+        from matplotlib import pyplot as plt
+        
+        # Get the default color cycle from Matplotlib
+        prop_cycle = plt.rcParams['axes.prop_cycle']
+        self.color_cycle = prop_cycle.by_key()['color']
 
 
 if __name__ == "__main__":
