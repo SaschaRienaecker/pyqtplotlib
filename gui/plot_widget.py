@@ -59,7 +59,14 @@ class CustomPlotWidget(pg.PlotWidget):
 
 
     def plot(self, *args, **kwargs):
-        # Translate Matplotlib-style arguments to Pyqtgraph-style arguments
+        self._handle_color(kwargs)
+        self._handle_linestyle(kwargs)
+        self._handle_marker(kwargs)
+
+        # Call the original plot() method with translated arguments
+        self.plot_item.plot(*args, **kwargs)
+
+    def _handle_color(self, kwargs):
         if 'color' in kwargs:
             kwargs['pen'] = pg.mkPen(kwargs['color'])
             del kwargs['color']
@@ -68,37 +75,34 @@ class CustomPlotWidget(pg.PlotWidget):
             num_items = len([item for item in self.getPlotItem().items if isinstance(item, pg.PlotDataItem)])
             # Get the next color from the color cycle
             col = self.color_cycle[num_items % len(self.color_cycle)]
-            print(col)
             kwargs['pen'] = pg.mkPen(col)
 
+    def _handle_linestyle(self, kwargs):
+        linestyle_mapping = {
+            '-': pg.QtCore.Qt.SolidLine,
+            '--': pg.QtCore.Qt.DashLine,
+            ':': pg.QtCore.Qt.DotLine,
+            '-.': pg.QtCore.Qt.DashDotLine,
+        }
         if 'linestyle' in kwargs:
-            if kwargs['linestyle'] == '-':
-                kwargs['pen'] = pg.mkPen(kwargs.get('pen', None), width=1)
-            elif kwargs['linestyle'] == '--':
-                kwargs['pen'] = pg.mkPen(kwargs.get('pen', None), width=1, style=pg.QtCore.Qt.DashLine)
-            elif kwargs['linestyle'] == ':':
-                kwargs['pen'] = pg.mkPen(kwargs.get('pen', None), width=1, style=pg.QtCore.Qt.DotLine)
-            elif kwargs['linestyle'] == '-.':
-                kwargs['pen'] = pg.mkPen(kwargs.get('pen', None), width=1, style=pg.QtCore.Qt.DashDotLine)
+            style = linestyle_mapping.get(kwargs['linestyle'], pg.QtCore.Qt.SolidLine)
+            kwargs['pen'] = pg.mkPen(kwargs.get('pen', None), width=1, style=style)
             del kwargs['linestyle']
+
+    def _handle_marker(self, kwargs):
+        marker_mapping = {
+            'o': 'o',
+            's': 's'
+            # Add more marker types if needed
+        }
         if 'marker' in kwargs:
-            brush = pg.mkBrush(kwargs.get('color', 'k'))
-            pen = pg.mkPen(kwargs.get('markeredgecolor', 'k'), width=1)
-            size = kwargs.get('markersize', 8)
-            if kwargs['marker'] == 'o':
-                kwargs['symbol'] = 'o'
-                kwargs['symbolBrush'] = brush
-                kwargs['symbolPen'] = pen
-                kwargs['size'] = size
-            elif kwargs['marker'] == 's':
-                kwargs['symbol'] = 's'
-                kwargs['symbolBrush'] = brush
-                kwargs['symbolPen'] = pen
-                kwargs['size'] = size
+            kwargs['symbol'] = marker_mapping.get(kwargs['marker'], None)
+            if kwargs['symbol']:
+                kwargs['symbolBrush'] = pg.mkBrush(kwargs.get('color', 'k'))
+                kwargs['symbolPen'] = pg.mkPen(kwargs.get('markeredgecolor', 'k'), width=1)
+                kwargs['size'] = kwargs.get('markersize', 8)
             del kwargs['marker']
 
-        # Call the original plot() method with translated arguments
-        self.plot_item.plot(*args, **kwargs)
 
 
     def apply_matplotlib_color_cycle(self):

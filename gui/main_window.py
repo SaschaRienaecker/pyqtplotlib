@@ -89,7 +89,7 @@ class MainWindow(QMainWindow):
     def fit_gaussian(self):
         # Fit a Gaussian curve to the data
         print('Fitting Gaussian curve...')
-        from utils.fit import fit_curve
+        from gui.utils.fit import fit_curve
         x_data, y_data = self.plot_widget.get_xy_data()
         curve_func, curve_params = fit_curve(x_data, y_data, 'gaussian')
 

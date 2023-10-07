@@ -3,7 +3,7 @@
 *java.log*
 *.pdf
 *.dat
-
+*gui.egg-info
 # blacklist all files starting with .
 /.*
 

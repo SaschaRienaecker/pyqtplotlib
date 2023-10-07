@@ -1,3 +1,4 @@
+#%%
 import sys
 import numpy as np
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QToolBar, QAction, QWidget
@@ -120,7 +121,7 @@ class ScatterPlot(QMainWindow):
     def fit_gaussian(self):
         # Fit a Gaussian curve to the data
         print('Fitting Gaussian curve...')
-        from utils.fit import fit_curve
+        from gui.utils.fit import fit_curve
         x_data = [point.x() for point in self.series.pointsVector()]
         y_data = [point.y() for point in self.series.pointsVector()]
         curve_func, curve_params = fit_curve(x_data, y_data, 'gaussian')
@@ -199,3 +200,5 @@ if __name__ == "__main__":
     window = ScatterPlot()
     window.show()
     sys.exit(app.exec_())
+
+# %%

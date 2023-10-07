@@ -1,3 +1,4 @@
+#%%
 from PyQt5 import QtCore, QtGui, QtWidgets
 import numpy as np
 from gui.plot_widget import CustomPlotWidget
@@ -97,3 +98,5 @@ if __name__ == "__main__":
     window = MainWindow()
     window.show()
     app.exec_()
+
+# %%
