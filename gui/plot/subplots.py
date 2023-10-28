@@ -1,43 +1,6 @@
-from gui.plot_widget import CustomPlotWidget
+from gui.plot import CustomPlotWidget
 from PyQt5 import QtCore, QtWidgets
 import numpy as np
-
-
-# class Subplots(QtWidgets.QWidget):
-#     def __init__(self, nrows, ncols, sharex=False, sharey=False, parent=None):
-#         super().__init__(parent=parent)
-#         layout = QtWidgets.QGridLayout()
-#         self.setLayout(layout)
-
-#         # Splitter config
-#         splitter_width = 10
-
-#         self.plot_widgets = np.empty((nrows, ncols), dtype=object)
-#         # Store all created splitters for further axis synchronization
-#         self.row_splitters = []
-#         self.col_splitters = []
-
-#         # Create splitters and plot_widgets
-#         for i in range(nrows):
-#             v_splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
-#             v_splitter.setHandleWidth(splitter_width)
-#             self.row_splitters.append(v_splitter)
-
-#             for j in range(ncols):
-#                 h_splitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
-#                 h_splitter.setHandleWidth(splitter_width)
-#                 self.col_splitters.append(h_splitter)
-
-#                 plot_widget = CustomPlotWidget()
-#                 h_splitter.addWidget(plot_widget)
-#                 self.plot_widgets[i, j] = plot_widget
-
-#                 if j == 0:
-#                     v_splitter.addWidget(h_splitter)
-#                 else:
-#                     v_splitter.insertWidget(j, h_splitter)
-
-#             layout.addWidget(v_splitter, i, 0)
 
 class Subplots(QtWidgets.QWidget):
     def __init__(self, nrows, ncols, sharex=False, sharey=False, parent=None):

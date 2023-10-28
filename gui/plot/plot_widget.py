@@ -55,7 +55,8 @@ class CustomPlotWidget(pg.PlotWidget):
         kwargs = self._handle_color(kwargs)
         kwargs = self._handle_linestyle(kwargs)
         kwargs = self._handle_marker(kwargs)
-        self.plot_item.plot(*args, **kwargs)
+        curve = self.plot_item.plot(*args, **kwargs)
+        return curve
 
     def _handle_color(self, kwargs):
         """Handle color arguments and return modified kwargs."""
@@ -156,7 +157,8 @@ if __name__ == "__main__":
     # Plot some data
     x = [0, 1, 2, 3, 4]
     y = [0, 1, 4, 9, 16]
-    plot_widget.plot(x, y, color='r', linestyle='--', marker='o', label='data')
+    curve = plot_widget.plot(x, y, color='r', linestyle='--', marker='o', label='data')
+
 
     window.show()
     sys.exit(app.exec_())

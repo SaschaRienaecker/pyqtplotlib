@@ -40,7 +40,7 @@ if __name__=='__main__':
     import sys
     from PyQt5.QtWidgets import QShortcut
     from PyQt5.QtGui import QKeySequence
-    from gui.main_window import MainWindow
+    from gui.test_main_window import MainWindow
 
     app = QApplication(sys.argv)
 

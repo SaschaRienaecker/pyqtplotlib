@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QFormLayout, QGroupBox, QS
 from PyQt5.QtWidgets import QShortcut
 from PyQt5.QtGui import QPainter, QIcon, QKeySequence
 from PyQt5.QtCore import Qt, QPointF, QRectF
-from gui.plot_widget import CustomPlotWidget
+from gui.plot.plot_widget import CustomPlotWidget
 from gui.shortcut_window import ShortcutWindow
 import signal
 

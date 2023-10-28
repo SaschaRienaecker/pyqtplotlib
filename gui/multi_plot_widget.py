@@ -1,7 +1,7 @@
 #%%
 from PyQt5 import QtCore, QtGui, QtWidgets
 import numpy as np
-from gui.plot_widget import CustomPlotWidget
+from gui.plot.plot_widget import CustomPlotWidget
 
 # class CustomPlotWidget(pg.PlotWidget):
 #     def __init__(self, parent=None, **kwargs):
