@@ -1,3 +1,4 @@
+from pyqtgraph.functions import mkPen
 import pyqtgraph as pg
 import sys
 import numpy as np
@@ -57,6 +58,50 @@ class CustomPlotWidget(pg.PlotWidget):
         kwargs = self._handle_marker(kwargs)
         curve = self.plot_item.plot(*args, **kwargs)
         return curve
+    
+
+    def imshow(self, data, colormap=None, levels=None, aspect='square', autoRange=True, **kwargs):
+        """
+        Display an image on the CustomPlotWidget.
+
+        Parameters:
+        - data: 2D numpy array
+        - colormap: a pyqtgraph.ColorMap or string specifying the colormap (e.g. 'viridis')
+        - levels: (min, max) tuple specifying the data range that corresponds to the 
+                  minimum and maximum display brightness levels
+        - aspect: 'square' to enforce square pixels, 'auto' to stretch the image to fill the axis
+        - autoRange: bool, whether to automatically adjust the view to fit image dimensions
+        - **kwargs: other keyword arguments to customize the ImageItem
+        """
+        
+        from pyqtgraph import ImageItem, ColorMap
+        # Create an ImageItem with the data
+        img_item = ImageItem(data, **kwargs)
+
+        if colormap:
+            if isinstance(colormap, str):
+                # Get colormap from string
+                colormap = pg.colormap.getFromMatplotlib(colormap)
+            img_item.setLookupTable(colormap.getLookupTable())
+
+        if levels:
+            img_item.setLevels(levels)
+
+        # Add the image to the plot
+        self.addItem(img_item)
+
+        # Set aspect
+        if aspect == 'square':
+            self.setAspectLocked(True)
+        elif aspect == 'auto':
+            self.setAspectLocked(False)
+
+        # Adjust view
+        if autoRange:
+            self.autoRange()
+
+        return img_item
+
 
     def _handle_color(self, kwargs):
         """Handle color arguments and return modified kwargs."""
