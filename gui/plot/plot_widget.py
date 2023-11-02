@@ -1,17 +1,20 @@
-from pyqtgraph.functions import mkPen
 import pyqtgraph as pg
 import sys
 import numpy as np
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel
 from PyQt5.QtCore import Qt
+from PyQt5 import QtCore
 from matplotlib import pyplot as plt
 
 pg.setConfigOption('background', 'w')
+pg.setConfigOption('leftButtonPan', False)
 
 
 class CustomPlotWidget(pg.PlotWidget):
     def __init__(self, parent=None, **kwargs):
         super().__init__(parent=parent, **kwargs)
+        
+        
         self.setParent(parent)
 
         self.plotItem.showGrid(True, True, 0.7)
@@ -26,10 +29,21 @@ class CustomPlotWidget(pg.PlotWidget):
         self.setMouseEnabled(x=True, y=True)
         self.setAntialiasing(True)
 
-        self._dragging = False
-        self._drag_start = None
         self.plot_item = self.getPlotItem()
         self.plot_item.scene().sigMouseMoved.connect(self._hoveredEvent)
+        
+        # Get the ViewBox
+        vb = self.plot_item.getViewBox()
+
+        # Change the mouse mode of the ViewBox to use the middle button for panning
+        # vb.setMouseMode(vb.RectMode) # This is just to ensure RectMode isn't active since it uses the left button
+        vb.setMouseMode(vb.PanMode)  # This is the default
+        # vb.mouseModes[QtCore.Qt.MidButton] = vb.PanMode
+        # vb.mouseModes[QtCore.Qt.LeftButton] = None  # Disable panning with the left button
+        
+        self.default_legend = self.add_legend()
+        self.default_legend.hide()
+
 
         self._apply_matplotlib_color_cycle()
 
@@ -56,8 +70,23 @@ class CustomPlotWidget(pg.PlotWidget):
         kwargs = self._handle_color(kwargs)
         kwargs = self._handle_linestyle(kwargs)
         kwargs = self._handle_marker(kwargs)
+        kwargs = self._handle_legend_label(kwargs)
         curve = self.plot_item.plot(*args, **kwargs)
         return curve
+    
+    def add_legend(self, *args, **kwargs):
+        """
+        Add a legend to the plot.
+
+        Args and kwargs are passed on to pyqtgraph's LegendItem.
+        """
+        legend_item = self.plotItem.addLegend(*args, **kwargs)
+        legend_item.setParentItem(self.plotItem) # This makes the legend part of the plot
+        return legend_item
+        
+    def legend(self, *args, **kwargs):
+        """Displays the legend."""
+        self.default_legend.show()
     
 
     def imshow(self, data, colormap=None, levels=None, aspect='square', autoRange=True, **kwargs):
@@ -144,6 +173,12 @@ class CustomPlotWidget(pg.PlotWidget):
                 kwargs.get('markeredgecolor', 'k'), width=1)
             kwargs['size'] = kwargs.get('markersize', 8)
         return kwargs
+    
+    def _handle_legend_label(self, kwargs):
+        """Handle legend label arguments and return modified kwargs."""
+        if 'label' in kwargs:
+            kwargs['name'] = kwargs['label']
+        return kwargs
 
     def _apply_matplotlib_color_cycle(self):
         """Apply default Matplotlib color cycle to the plot."""
@@ -170,15 +205,46 @@ class CustomPlotWidget(pg.PlotWidget):
         """Set y-axis limits."""
         self.plotItem.setYRange(ymin, ymax)
 
-    def set_xscale(self, scale):
-        """Set x-axis scale ('linear' or 'log')."""
-        is_log = scale == 'log'
-        self.plotItem.setLogMode(x=is_log)
+        
+    def set_yscale(self, scale_type):
+        """
+        Set the y-axis scale.
 
-    def set_yscale(self, scale):
-        """Set y-axis scale ('linear' or 'log')."""
-        is_log = scale == 'log'
-        self.plotItem.setLogMode(y=is_log)
+        Parameters:
+        - scale_type: str
+            Either 'log' or 'linear'
+        """
+        if scale_type == 'log':
+            self.plot_item.setLogMode(y=True)
+            # self.getAxis('left').setLogMode(True)
+        elif scale_type == 'linear':
+            self.plot_item.setLogMode(y=False)
+            # self.getAxis('left').setLogMode(False)
+        else:
+            raise ValueError("Invalid y-scale type. Choose 'linear' or 'log'.")
+
+    def set_xscale(self, scale_type):
+        """
+        Set the x-axis scale.
+
+        Parameters:
+        - scale_type: str
+            Either 'log' or 'linear'
+        """
+        if scale_type == 'log':
+            # self.getAxis('bottom').setLogMode(True)
+            self.plot_item.setLogMode(x=True)
+        elif scale_type == 'linear':
+            # self.getAxis('bottom').setLogMode(False)
+            self.plot_item.setLogMode(x=False)
+        else:
+            raise ValueError("Invalid x-scale type. Choose 'linear' or 'log'.")
+        
+    def keyPressEvent(self, event):
+        if event.key() == pg.Qt.QtCore.Qt.Key_Escape:
+            # Trigger auto scaling when "Esc" is pressed
+            self.autoBtnClicked()
+        super(CustomPlotWidget, self).keyPressEvent(event)
 
 # Usage can be similar, and extending this further will enhance its capabilities.
 
