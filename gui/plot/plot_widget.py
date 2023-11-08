@@ -197,15 +197,32 @@ class CustomPlotWidget(pg.PlotWidget):
         """Set plot title."""
         self.plotItem.setTitle(title)
 
-    def set_xlim(self, xmin, xmax):
+    def set_xlim(self, left=None, right=None):
         """Set x-axis limits."""
-        self.plotItem.setXRange(xmin, xmax)
-
-    def set_ylim(self, ymin, ymax):
-        """Set y-axis limits."""
-        self.plotItem.setYRange(ymin, ymax)
-
+        [[xmin, xmax], [_, _]] = self.plotItem.viewRange()
         
+        if left and right:
+            self.plotItem.setXRange(left, right)
+        elif left:
+            self.plotItem.setXRange(left, xmax)
+        elif right:
+            self.plotItem.setXRange(xmin,   right)
+        else:
+            raise ValueError("Must specify at least one of 'left' or 'right'.")
+
+    def set_ylim(self, bottom=None, top=None):
+        """Set y-axis limits."""
+        [[_, _], [ymin, ymax]] = self.plotItem.viewRange()
+        
+        if bottom and top:
+            self.plotItem.setYRange(bottom, top)
+        elif bottom:
+            self.plotItem.setYRange(bottom, ymax)
+        elif top:
+            self.plotItem.setYRange(ymin,   top)
+        else:
+            raise ValueError("Must specify at least one of 'bottom' or 'top'.")
+               
     def set_yscale(self, scale_type):
         """
         Set the y-axis scale.
@@ -269,7 +286,12 @@ if __name__ == "__main__":
     x = [0, 1, 2, 3, 4]
     y = [0, 1, 4, 9, 16]
     curve = plot_widget.plot(x, y, color='r', linestyle='--', marker='o', label='data')
-
+    
+    ax = plot_widget
+    ax.plot(x, y, color='r', linestyle='--', marker='o', label='data')
+    ax.set_xlim(left=-1)
+    ax.set_ylim(-1, top=20)
+    # ax.set_ylim(bottom=-1)
 
     window.show()
     sys.exit(app.exec_())
