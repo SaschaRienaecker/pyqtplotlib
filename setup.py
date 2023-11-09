@@ -9,8 +9,11 @@ setup(
     packages=find_packages(),  # Automatically discover and include all packages
     install_requires=[
         # List the dependencies your package needs
-        # 'dependency1',
-        # 'dependency2',
+        'pyqt5',
+        'pyqtgraph',
+        'numpy',
+        'scipy',
+        'matplotlib',
     ],
     classifiers=[
         # 'Development Status :: 3 - Alpha',
