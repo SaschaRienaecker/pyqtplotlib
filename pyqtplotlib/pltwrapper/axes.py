@@ -1,26 +1,24 @@
+#%%
 import pyqtgraph as pg
 import sys
-import numpy as np
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel
 from PyQt5.QtCore import Qt
-from PyQt5 import QtCore
 from matplotlib import pyplot as plt
 
 pg.setConfigOption('background', 'w')
 pg.setConfigOption('leftButtonPan', False)
 
 
-class CustomPlotWidget(pg.PlotWidget):
+class AxesWidget(pg.PlotWidget):
+    
     def __init__(self, parent=None, **kwargs):
         super().__init__(parent=parent, **kwargs)
         
-        
         self.setParent(parent)
-
         self.plotItem.showGrid(True, True, 0.7)
         self.set_xlabel('X-axis')
         self.set_ylabel('Y-axis')
-        self.set_title('Custom Plot')
+        self.set_title('')
 
         self.hover_label = QLabel(self)
         self.hover_label.setAlignment(Qt.AlignCenter)
@@ -46,6 +44,8 @@ class CustomPlotWidget(pg.PlotWidget):
 
 
         self._apply_matplotlib_color_cycle()
+        
+        self.figure = None
 
 
 
@@ -91,7 +91,7 @@ class CustomPlotWidget(pg.PlotWidget):
 
     def imshow(self, data, colormap=None, levels=None, aspect='square', autoRange=True, **kwargs):
         """
-        Display an image on the CustomPlotWidget.
+        Display an image on the AxesWidget.
 
         Parameters:
         - data: 2D numpy array
@@ -257,11 +257,17 @@ class CustomPlotWidget(pg.PlotWidget):
         else:
             raise ValueError("Invalid x-scale type. Choose 'linear' or 'log'.")
         
+    def assign_figure(self, figure):
+        self.figure = figure
+        
+    def get_figure(self):
+        return self.figure
+        
     def keyPressEvent(self, event):
         if event.key() == pg.Qt.QtCore.Qt.Key_Escape:
             # Trigger auto scaling when "Esc" is pressed
             self.autoBtnClicked()
-        super(CustomPlotWidget, self).keyPressEvent(event)
+        super(AxesWidget, self).keyPressEvent(event)
 
 # Usage can be similar, and extending this further will enhance its capabilities.
 
@@ -277,17 +283,16 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
     # Create a custom plot widget
-    plot_widget = CustomPlotWidget()
+    ax = AxesWidget()
 
     # Add the plot widget to the main window
-    window.setCentralWidget(plot_widget)
+    window.setCentralWidget(ax)
     window.setGeometry(100, 100, 800, 600)
     # Plot some data
     x = [0, 1, 2, 3, 4]
     y = [0, 1, 4, 9, 16]
-    curve = plot_widget.plot(x, y, color='r', linestyle='--', marker='o', label='data')
+    curve = ax.plot(x, y, color='r', linestyle='--', marker='o', label='data')
     
-    ax = plot_widget
     ax.plot(x, y, color='r', linestyle='--', marker='o', label='data')
     ax.set_xlim(left=-1)
     ax.set_ylim(-1, top=20)
@@ -296,3 +301,5 @@ if __name__ == "__main__":
     window.show()
     sys.exit(app.exec_())
 
+
+# %%

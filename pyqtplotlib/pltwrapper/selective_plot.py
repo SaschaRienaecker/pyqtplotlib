@@ -1,14 +1,11 @@
 import pyqtgraph as pg
-from PyQt5.QtCore import Qt
-from PyQt5 import QtWidgets
 import numpy as np
-from pyqtgraph.Qt import QtCore
 
 
-from gui.plot import CustomPlotWidget
+from pyqtplotlib.pltwrapper import AxesWidget
 
 
-class SelectivePlotWidget(CustomPlotWidget):
+class SelectivePlotWidget(AxesWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -75,10 +72,6 @@ class SelectivePlotWidget(CustomPlotWidget):
 
         self.set_data(X[~mask], Y[~mask])
         
-
-    def apply_fit(self, x, y):
-        # Placeholder for fit functionality
-        pass
 
     # def keyPressEvent(self, event):
     #     if event.key() == QtCore.Qt.Key_Control:

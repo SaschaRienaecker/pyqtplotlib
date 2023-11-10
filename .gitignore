@@ -3,10 +3,10 @@
 *java.log*
 *.pdf
 *.dat
-*gui.egg-info
+*.egg-info
 # blacklist all files starting with .
 /.*
 
 # Whitelist some files (exceptions to the previous rule)
-!.gitignore
-!README.md
+# !.gitignore
+# !README.md
