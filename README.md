@@ -22,9 +22,27 @@ pip install --user .
 ```python
 # Example code
 import pyqtplotlib as qtplt
+from PyQt5 import QtWidgets
+
+app = QtWidgets.QApplication([])
+fig, ax = qtplt.subplots()
+ax.plot([1, 2, 3], [1, 2, 3], color='r', linestyle='--', label='example 1')
+fig.show()
+app.exec_()
 ```
+For more examples, see the [examples](examples) folder.
 
+## TODO's:
 
+The 'Axes' class misses the following functionalities:
+- [ ] `ax.grid()`
+- [ ] `ax.set_aspect()`
+- [ ] Diverse format options passed to the `ax.plot()` function are not yet implemented.
+- [ ] ...
+
+The 'Figure' class misses the following functionalities:
+- [ ] pass `figsize` to `Figure` constructor
+- [ ] ...
 
 ## Acknowledgments
 

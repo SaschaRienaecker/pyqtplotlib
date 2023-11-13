@@ -67,6 +67,7 @@ class AxesWidget(pg.PlotWidget):
 
     def plot(self, *args, **kwargs):
         """Plot data with arguments similar to Matplotlib."""
+        # kwargs = self._handle_fmt(*args, **kwargs)
         kwargs = self._handle_color(kwargs)
         kwargs = self._handle_linestyle(kwargs)
         kwargs = self._handle_marker(kwargs)
@@ -131,6 +132,24 @@ class AxesWidget(pg.PlotWidget):
 
         return img_item
 
+    # def _handle_fmt(self, *args, **kwargs):
+    #     """Handle fmt argument and return modified kwargs."""
+    #     if len(args) == 2:
+    #         fmt = args[1]
+    #     elif len(args) == 3:
+    #         fmt = args[2]
+    #     else:
+    #         fmt = kwargs.get('fmt', None)
+            
+    #     if not isinstance(fmt, str):
+    #         fmt = None
+            
+    #     if fmt is not None:
+    #         # fmt is a positional argument, e.g. plot(x, y, 'ro')
+    #         kwargs['color'] = fmt[0]
+    #         kwargs['marker'] = fmt[1]
+    #         kwargs['linestyle'] = fmt[2:]
+    #     return kwargs
 
     def _handle_color(self, kwargs):
         """Handle color arguments and return modified kwargs."""
@@ -153,6 +172,7 @@ class AxesWidget(pg.PlotWidget):
         }
         style = linestyle_mapping.get(kwargs.get(
             'linestyle', '-'), pg.QtCore.Qt.SolidLine)
+        
         kwargs['pen'] = pg.mkPen(kwargs.get('pen', None), width=1, style=style)
         return kwargs
 

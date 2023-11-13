@@ -3,6 +3,7 @@ from pyqtplotlib.pltwrapper import AxesWidget
 from PyQt5 import QtCore, QtWidgets
 import numpy as np
 
+from typing import Tuple
 from pyqtplotlib.pltwrapper.figure import Figure
 from pyqtplotlib.pltwrapper.axes import AxesWidget
 
@@ -32,6 +33,16 @@ class Subplots(Figure):
             self._sync_axes('x')
         if sharey:
             self._sync_axes('y')
+            
+    def get_fig_and_axs(self):
+        """Return the figure and a 2D numpy array of Axes unless there is only one axis."""
+        
+        fig = self.axs[0, 0].get_figure()
+        
+        if self.axs.shape==(1,1):
+            return fig, self.axs[0,0]
+        else:
+            return fig, self.axs
 
 
     def _sync_axes(self, axis):
@@ -48,16 +59,17 @@ class Subplots(Figure):
         # Connect the master's view change signal to the sync function
         # master.getViewBox().sigRangeChanged.connect(sync_views)
 
-    def get_axs(self):
-        """Return the 2D numpy array of Axes unless there is only one axis."""
-        if self.axs.shape==(1,1):
-            return self.axs[0,0]
-        else:
-            return self.axs
 
 
-    
-def subplots(nrows, ncols, sharex=False, sharey=False, parent=None):
+
+def output_figure_and_axes(func):
+    def wrapper(*args, **kwargs) -> Tuple[Figure, AxesWidget]:
+        fig, axs = func(*args, **kwargs)
+        return fig, axs
+    return wrapper
+
+@output_figure_and_axes
+def subplots(nrows=1, ncols=1, sharex=False, sharey=False, parent=None):
     """Create a figure with a set of subplots already made.
 
     This utility wrapper makes it convenient to create common layouts of
@@ -75,9 +87,8 @@ def subplots(nrows, ncols, sharex=False, sharey=False, parent=None):
         The instance of the Figure object to which the subplots belong.
     axs : array of Axes
     """
-    _subplots = Subplots(nrows, ncols, sharex=sharex, sharey=sharey, parent=parent)
-    axs = _subplots.get_axs()
-    fig = axs[0, 0].get_figure()
+    _subplots = Subplots(nrows, ncols, sharex=sharex, sharey=sharey, parent=parent)        
+    fig, axs = _subplots.get_fig_and_axs()
     return fig, axs
     
 
