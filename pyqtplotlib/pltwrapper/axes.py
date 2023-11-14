@@ -67,13 +67,103 @@ class AxesWidget(pg.PlotWidget):
 
     def plot(self, *args, **kwargs):
         """Plot data with arguments similar to Matplotlib."""
+        kwargs_pen = {}
+        kwargs_pen.update(self._handle_color(kwargs))
+        kwargs_pen.update(self._handle_linestyle(kwargs))
+        kwargs_pen.update(self._handle_linewidth(kwargs))
         # kwargs = self._handle_fmt(*args, **kwargs)
-        kwargs = self._handle_color(kwargs)
-        kwargs = self._handle_linestyle(kwargs)
-        kwargs = self._handle_marker(kwargs)
+        pen = pg.mkPen(**kwargs_pen)
+        
+        # ... other handle methods which do not comncern the pen ...
+        kwargs = self._handle_marker(kwargs, kwargs_pen)
         kwargs = self._handle_legend_label(kwargs)
-        curve = self.plot_item.plot(*args, **kwargs)
-        return curve
+        
+        plot_item = self.plot_item.plot(*args, **kwargs, pen=pen)
+        return plot_item
+    
+    # def _handle_fmt(self, *args, **kwargs):
+    #     """Handle fmt argument and return modified kwargs."""
+    #     if len(args) == 2:
+    #         fmt = args[1]
+    #     elif len(args) == 3:
+    #         fmt = args[2]
+    #     else:
+    #         fmt = kwargs.get('fmt', None)
+            
+    #     if not isinstance(fmt, str):
+    #         fmt = None
+            
+    #     if fmt is not None:
+    #         # fmt is a positional argument, e.g. plot(x, y, 'ro')
+    #         kwargs['color'] = fmt[0]
+    #         kwargs['marker'] = fmt[1]
+    #         kwargs['linestyle'] = fmt[2:]
+    #     return kwargs
+
+
+    def _handle_color(self, kwargs):
+        """Handle color arguments and return modified kwargs_pen."""
+        kwargs_pen = kwargs.get(
+            'pen', {})  # Retrieve existing pen kwargs or initialize an empty dict
+        if 'color' in kwargs:
+            kwargs_pen['color'] = kwargs.pop('color')
+        else:
+            num_items = len([item for item in self.getPlotItem(
+            ).items if isinstance(item, pg.PlotDataItem)])
+            col = self._color_cycle[num_items % len(self._color_cycle)]
+            kwargs_pen['color'] = col
+        return kwargs_pen
+
+
+    def _handle_linestyle(self, kwargs):
+        """Handle linestyle arguments and return modified kwargs_pen."""
+        linestyle_mapping = {
+            '-': pg.QtCore.Qt.SolidLine,
+            '--': pg.QtCore.Qt.DashLine,
+            ':': pg.QtCore.Qt.DotLine,
+            '-.': pg.QtCore.Qt.DashDotLine,
+        }
+        kwargs_pen = kwargs.get('pen', {})  # Retrieve existing pen kwargs or initialize an empty dict
+        style = linestyle_mapping.get(kwargs.pop('linestyle', '-'), pg.QtCore.Qt.SolidLine)
+        kwargs_pen['style'] = style
+        return kwargs_pen
+
+    
+    def _handle_linewidth(self, kwargs):
+        """
+        Handle the linewidth argument, accepting either 'lw' or 'linewidth'.
+        """
+        kwargs_pen = kwargs.get('pen', {})  # Retrieve existing pen kwargs or initialize an empty dict
+        if 'lw' in kwargs or 'linewidth' in kwargs:
+            lw = kwargs.pop('lw', None) or kwargs.pop('linewidth', None)
+            kwargs_pen['width'] = lw  # Set the linewidth in the pen kwargs
+        return kwargs_pen
+
+
+    def _handle_marker(self, kwargs, kwargs_pen):
+        """Handle marker arguments and return modified kwargs."""
+        marker_mapping = {
+            'o': 'o', 's': 's', 'd': 'd', '^': '^', 'x': 'x', '+': '+',
+            # Extend with more marker types if needed
+        }
+        symbol = marker_mapping.get(kwargs.pop('marker', None), None)
+        if symbol:
+            # Use color from kwargs_pen for consistency
+            color = kwargs_pen.get('color', 'k')
+            markeredgecolor = kwargs.pop('markeredgecolor', color)
+            markersize = kwargs.pop('markersize', kwargs.pop('ms', 8))
+
+            kwargs['symbol'] = symbol
+            # kwargs['symbolBrush'] = pg.mkBrush(color)
+            kwargs['symbolPen'] = pg.mkPen(markeredgecolor, width=markersize)
+            # kwargs['size'] = kwargs.pop('markersize', kwargs.pop('ms', 8))
+        return kwargs
+
+    def _handle_legend_label(self, kwargs):
+        """Handle legend label arguments and return modified kwargs."""
+        if 'label' in kwargs:
+            kwargs['name'] = kwargs['label']
+        return kwargs
     
     def add_legend(self, *args, **kwargs):
         """
@@ -132,73 +222,6 @@ class AxesWidget(pg.PlotWidget):
 
         return img_item
 
-    # def _handle_fmt(self, *args, **kwargs):
-    #     """Handle fmt argument and return modified kwargs."""
-    #     if len(args) == 2:
-    #         fmt = args[1]
-    #     elif len(args) == 3:
-    #         fmt = args[2]
-    #     else:
-    #         fmt = kwargs.get('fmt', None)
-            
-    #     if not isinstance(fmt, str):
-    #         fmt = None
-            
-    #     if fmt is not None:
-    #         # fmt is a positional argument, e.g. plot(x, y, 'ro')
-    #         kwargs['color'] = fmt[0]
-    #         kwargs['marker'] = fmt[1]
-    #         kwargs['linestyle'] = fmt[2:]
-    #     return kwargs
-
-    def _handle_color(self, kwargs):
-        """Handle color arguments and return modified kwargs."""
-        if 'color' in kwargs:
-            kwargs['pen'] = pg.mkPen(kwargs['color'])
-        else:
-            num_items = len([item for item in self.getPlotItem(
-            ).items if isinstance(item, pg.PlotDataItem)])
-            col = self._color_cycle[num_items % len(self._color_cycle)]
-            kwargs['pen'] = pg.mkPen(col)
-        return kwargs
-
-    def _handle_linestyle(self, kwargs):
-        """Handle linestyle arguments and return modified kwargs."""
-        linestyle_mapping = {
-            '-': pg.QtCore.Qt.SolidLine,
-            '--': pg.QtCore.Qt.DashLine,
-            ':': pg.QtCore.Qt.DotLine,
-            '-.': pg.QtCore.Qt.DashDotLine,
-        }
-        style = linestyle_mapping.get(kwargs.get(
-            'linestyle', '-'), pg.QtCore.Qt.SolidLine)
-        
-        kwargs['pen'] = pg.mkPen(kwargs.get('pen', None), width=1, style=style)
-        return kwargs
-
-    def _handle_marker(self, kwargs):
-        """Handle marker arguments and return modified kwargs."""
-        marker_mapping = {
-            'o': 'o',
-            's': 's',
-            'd': 'd',
-            '^': '^'
-            # Extend with more marker types if needed
-        }
-        symbol = marker_mapping.get(kwargs.get('marker', None), None)
-        if symbol:
-            kwargs['symbol'] = symbol
-            kwargs['symbolBrush'] = pg.mkBrush(kwargs.get('color', 'k'))
-            kwargs['symbolPen'] = pg.mkPen(
-                kwargs.get('markeredgecolor', 'k'), width=1)
-            kwargs['size'] = kwargs.get('markersize', 8)
-        return kwargs
-    
-    def _handle_legend_label(self, kwargs):
-        """Handle legend label arguments and return modified kwargs."""
-        if 'label' in kwargs:
-            kwargs['name'] = kwargs['label']
-        return kwargs
 
     def _apply_matplotlib_color_cycle(self):
         """Apply default Matplotlib color cycle to the plot."""
@@ -294,7 +317,7 @@ class AxesWidget(pg.PlotWidget):
 
 
 if __name__ == "__main__":
-
+    app = 0
     app = QApplication(sys.argv)
     window = QMainWindow()
 
@@ -311,9 +334,8 @@ if __name__ == "__main__":
     # Plot some data
     x = [0, 1, 2, 3, 4]
     y = [0, 1, 4, 9, 16]
-    curve = ax.plot(x, y, color='r', linestyle='--', marker='o', label='data')
-    
-    ax.plot(x, y, color='r', linestyle='--', marker='o', label='data')
+    curve = ax.plot(x, y, color='r', linestyle='--', marker='+', markersize=10, lw=1, label='data')
+
     ax.set_xlim(left=-1)
     ax.set_ylim(-1, top=20)
     # ax.set_ylim(bottom=-1)
@@ -322,4 +344,4 @@ if __name__ == "__main__":
     sys.exit(app.exec_())
 
 
-# %%
+                       # %%
