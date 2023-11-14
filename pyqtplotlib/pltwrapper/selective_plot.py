@@ -39,22 +39,33 @@ class SelectivePlotWidget(AxesWidget):
     
     
 
-    def onROIChanged(self):
-        """This method is called when the ROI is changed. Override this method to add custom functionality."""
+    def onROIChanged(self, inverted=False):
+        """Override to add custom functionality.This method is called when the ROI is changed.
+        The `inverted` argument is used to invert the logic of the ROI, when holding Shift.
+        """
         pass        
         
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_E:
             self.ePressed = True
-            
+            if event.modifiers() & QtCore.Qt.ShiftModifier:
+                # Connect with inverted logic
+                self.roi.sigRegionChangeFinished.disconnect()
+                self.roi.sigRegionChangeFinished.connect(lambda: self.onROIChanged(inverted=True))
+            else:
+                # Connect with normal logic
+                self.roi.sigRegionChangeFinished.disconnect()
+                self.roi.sigRegionChangeFinished.connect(lambda: self.onROIChanged(inverted=False))
         super().keyPressEvent(event)
 
     def keyReleaseEvent(self, event):
         if event.key() == QtCore.Qt.Key_E:
             self.ePressed = False
-
+            # Revert to default connection
+            self.roi.sigRegionChangeFinished.disconnect()
+            self.roi.sigRegionChangeFinished.connect(lambda: self.onROIChanged(inverted=False))
         super().keyReleaseEvent(event)
-
+    
     def mousePressEvent(self, event):
         if self.ePressed:
             self.roi.show()
@@ -93,23 +104,33 @@ if __name__ == "__main__":
             super().__init__(parent)
             
             self.mask = None
+            self.roi_data = self.plot([], [], color='r', marker='o', label='ROI')
             
-        def onROIChanged(self):
+        def onROIChanged(self, inverted=False):
+            
             bounds = self.roi.parentBounds()
             x1, y1, x2, y2 = bounds.left(), bounds.top(), bounds.right(), bounds.bottom()
             
             x, y = self.data    
             mask = (x>x1) & (x<x2) & (y>y1) & (y<y2)
-            self.update_mask(mask)
+            self.update_mask(mask, inverted=inverted)
         
-        def update_mask(self, mask):
+        def update_mask(self, mask, inverted=False):
+            
+            x, y = self.data
             
             if self.mask is None:
-                self.mask = mask
+                self.mask = np.zeros_like(x, dtype=bool)
             else:
-                self.mask = np.hstack([self.mask, mask]) # append to existing mask
-            x, y = self.data
-            self.set_data(x[~mask], y[~mask])
+                
+                if not inverted: # append to existing mask
+                    self.mask[mask] = True
+                    # self.mask = np.hstack([self.mask, mask])
+                else: # remove from existing mask
+                    self.mask[mask] = False
+                    
+            # self.set_data(x[~mask], y[~mask])
+            self.roi_data.setData(x[self.mask], y[self.mask])
         
     
     app = 0
@@ -122,15 +143,15 @@ if __name__ == "__main__":
 
     
     ax = ExcludeSelectionPlot()  
-    
+    ax.set_title('Select a region to exclude by holding "e" and dragging the mouse.\nDrag with "Shift+e" to invert the selection.')
 
     # Add the plot widget to the main window
     window.setCentralWidget(ax)
-    window.setGeometry(100, 100, 800, 600)
+    window.setGeometry(100, 100, 1000, 600)
     # Plot some data
     x = [0, 1, 2, 3, 4]
     y = [0, 1, 4, 9, 16]
-    curve = ax.set_data(x, y, color='r', linestyle='--', marker='o', label='data')
+    curve = ax.set_data(x, y, color='b', linestyle='--', marker='x', label='data')
 
 
     window.show()
