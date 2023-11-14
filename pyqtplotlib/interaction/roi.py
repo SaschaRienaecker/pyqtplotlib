@@ -90,6 +90,30 @@ class ROIAxesWidget(pg.PlotWidget):
             super().mouseReleaseEvent(event)
         
 
+"""
+The idea is to combine the functionality of the two classes into one class, as illustrated below:
+class Mixin1:
+    def __init__(self):
+        super().__init__()
+        # Initialization code for Mixin1
+
+class Mixin2:
+    def __init__(self):
+        super().__init__()
+        # Initialization code for Mixin2
+
+class BaseClass:
+    def __init__(self):
+        # Base class initialization
+
+class CombinedClass(BaseClass, Mixin1, Mixin2):
+    def __init__(self):
+        super().__init__()
+        # CombinedClass specific initialization
+        
+This will allow the base class (here: AxesWidget) to be enhanced with additional functionality, depending on the use case.
+"""
+
 class ExcludeSelectionPlot(AxesWidget, ROIAxesWidget):
     def __init__(self, parent=None):
         """Plot widget with an ROI that can be used to exclude data points from the plot.

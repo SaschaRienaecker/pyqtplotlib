@@ -9,7 +9,7 @@ from pyqtplotlib.pltwrapper.axes import AxesWidget
 
 class Subplots(Figure):
     
-    def __init__(self, nrows=1, ncols=1, sharex=False, sharey=False, parent=None, **figure_kwargs):
+    def __init__(self, nrows=1, ncols=1, sharex=False, sharey=False, axwidget=AxesWidget, parent=None, **figure_kwargs):
         super().__init__(parent=parent, **figure_kwargs)
             
         self.axs = np.empty((nrows, ncols), dtype=object)
@@ -23,7 +23,7 @@ class Subplots(Figure):
                 QtCore.Qt.Horizontal)  # Splitter for each row
             main_splitter.addWidget(row_splitter)
             for j in range(ncols):
-                ax = AxesWidget()
+                ax = axwidget()
                 ax.figure = self
                 row_splitter.addWidget(ax)
                 self.axs[i, j] = ax
@@ -69,8 +69,8 @@ def output_figure_and_axes(func):
     return wrapper
 
 @output_figure_and_axes
-def subplots(nrows=1, ncols=1, sharex=False, sharey=False, parent=None):
-    """Create a figure with a set of subplots already made.
+def subplots(nrows=1, ncols=1, sharex=False, sharey=False, axwidget=AxesWidget, parent=None):
+    """Create a figure with a set of subplots (wrapper function for calling the `Subplots` class)
 
     This utility wrapper makes it convenient to create common layouts of
     subplots, including the enclosing figure object, in a single call.
@@ -80,6 +80,7 @@ def subplots(nrows=1, ncols=1, sharex=False, sharey=False, parent=None):
     nrows, ncols : int
         Number of rows/columns of the subplot grid.
     sharex, sharey : bool, default: False
+    axwidget : Widget to use, default: AxesWidget (the base class for all axes widgets)
     
     Returns
     -------
@@ -87,7 +88,8 @@ def subplots(nrows=1, ncols=1, sharex=False, sharey=False, parent=None):
         The instance of the Figure object to which the subplots belong.
     axs : array of Axes
     """
-    _subplots = Subplots(nrows, ncols, sharex=sharex, sharey=sharey, parent=parent)        
+    _subplots = Subplots(nrows, ncols, sharex=sharex,
+                         sharey=sharey, axwidget=axwidget, parent=parent)
     fig, axs = _subplots.get_fig_and_axs()
     return fig, axs
     
