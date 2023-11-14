@@ -6,7 +6,7 @@ from PyQt5 import QtCore, QtWidgets
 from pyqtplotlib.pltwrapper import AxesWidget
 
 
-class SelectivePlotWidget(AxesWidget):
+class ROIAxesWidget(pg.PlotWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -90,47 +90,47 @@ class SelectivePlotWidget(AxesWidget):
             super().mouseReleaseEvent(event)
         
 
-
+class ExcludeSelectionPlot(AxesWidget, ROIAxesWidget):
+    def __init__(self, parent=None):
+        """Plot widget with an ROI that can be used to exclude data points from the plot.
+        """
+        super().__init__(parent=parent)
+                    
+        self.mask = None
+        self.roi_data = self.plot([], [], color='r', marker='o', label='ROI')
+        self.set_title('Select a region to exclude by holding "e" and dragging the mouse.\nDrag with "Shift+e" to invert the selection.')
+            
+    def onROIChanged(self, inverted=False):
+        
+        bounds = self.roi.parentBounds()
+        x1, y1, x2, y2 = bounds.left(), bounds.top(), bounds.right(), bounds.bottom()
+        
+        x, y = self.data    
+        mask = (x>x1) & (x<x2) & (y>y1) & (y<y2)
+        self.update_mask(mask, inverted=inverted)
+    
+    def update_mask(self, mask, inverted=False):
+        
+        x, y = self.data
+        
+        if self.mask is None:
+            self.mask = np.zeros_like(x, dtype=bool)
+        else:
+            
+            if not inverted: # append to existing mask
+                self.mask[mask] = True
+                # self.mask = np.hstack([self.mask, mask])
+            else: # remove from existing mask
+                self.mask[mask] = False
+                
+        # self.set_data(x[~mask], y[~mask])
+        self.roi_data.setData(x[self.mask], y[self.mask])
+        
 if __name__ == "__main__":
 
     from PyQt5.QtWidgets import QApplication, QMainWindow
     import sys
     
-    # crate a classs that inherits from SelectivePlotWidget
-    # and add some functionality to the onROIChanged method;
-    # Here, we exclude the data points that are inside the ROI:
-    class ExcludeSelectionPlot(SelectivePlotWidget):
-        def __init__(self, parent=None):
-            super().__init__(parent)
-            
-            self.mask = None
-            self.roi_data = self.plot([], [], color='r', marker='o', label='ROI')
-            
-        def onROIChanged(self, inverted=False):
-            
-            bounds = self.roi.parentBounds()
-            x1, y1, x2, y2 = bounds.left(), bounds.top(), bounds.right(), bounds.bottom()
-            
-            x, y = self.data    
-            mask = (x>x1) & (x<x2) & (y>y1) & (y<y2)
-            self.update_mask(mask, inverted=inverted)
-        
-        def update_mask(self, mask, inverted=False):
-            
-            x, y = self.data
-            
-            if self.mask is None:
-                self.mask = np.zeros_like(x, dtype=bool)
-            else:
-                
-                if not inverted: # append to existing mask
-                    self.mask[mask] = True
-                    # self.mask = np.hstack([self.mask, mask])
-                else: # remove from existing mask
-                    self.mask[mask] = False
-                    
-            # self.set_data(x[~mask], y[~mask])
-            self.roi_data.setData(x[self.mask], y[self.mask])
         
     
     app = 0
@@ -143,7 +143,6 @@ if __name__ == "__main__":
 
     
     ax = ExcludeSelectionPlot()  
-    ax.set_title('Select a region to exclude by holding "e" and dragging the mouse.\nDrag with "Shift+e" to invert the selection.')
 
     # Add the plot widget to the main window
     window.setCentralWidget(ax)
@@ -152,7 +151,6 @@ if __name__ == "__main__":
     x = [0, 1, 2, 3, 4]
     y = [0, 1, 4, 9, 16]
     curve = ax.set_data(x, y, color='b', linestyle='--', marker='x', label='data')
-
 
     window.show()
     sys.exit(app.exec_())
