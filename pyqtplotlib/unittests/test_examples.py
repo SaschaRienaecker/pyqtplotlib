@@ -1,1 +1,0 @@
-from pyqtplotlib.examples import basic_subplots
