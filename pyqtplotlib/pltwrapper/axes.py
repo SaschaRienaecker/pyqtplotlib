@@ -2,7 +2,7 @@
 import pyqtgraph as pg
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QGraphicsItem
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QPointF
 from matplotlib import pyplot as plt
 
 pg.setConfigOption('background', 'w')
@@ -58,7 +58,7 @@ class AxesWidget(pg.PlotWidget):
         """Update hover label with data coordinates."""
         data_pos = self.plot_item.getViewBox().mapSceneToView(pos)
         self.hover_label.setText(
-            "({:.3f}, {:.3f})".format(data_pos.x(), data_pos.y()))
+            "({:.1f}, {:.1f})".format(data_pos.x(), data_pos.y()))
 
 
     def get_xy_data(self, item_index=0):
@@ -114,19 +114,26 @@ class AxesWidget(pg.PlotWidget):
         self.addItem(line)
         return line
     
-    def text(self, x, y, text, **kwargs):
+    def text(self, x, y, text, transform='data', **kwargs):
         """
-        Add text to the plot at specified coordinates.
+        Add text to the plot at specified coordinates with Matplotlib-like syntax.
+        """
+        # Handle anchor (alignment)
+        anchor = self._handle_anchor(kwargs)
 
-        Parameters:
-        - x, y: The coordinates of the text.
-        - text: The text string.
-        - **kwargs: Additional keyword arguments to customize the text appearance.
-        """
-        textItem = MovableTextItem(text, **kwargs)
-        textItem.setPos(x, y)
-        textItem.setText(text)
-        # textItem.setMovable(True)  # Make the text item movable
+        textItem = MovableTextItem(text, anchor=anchor, **kwargs)
+        # Handle transform (coordinate system)
+        # textItem.setPos(x, y)  # Axes fraction coordinates
+        if transform == 'axes':
+            raise NotImplementedError("Axes fraction coordinates not implemented yet.")
+            # Convert axes fraction coordinates to view coordinates
+            view_x = self.plotItem.viewRect().left() + x * self.plotItem.viewRect().width()
+            view_y = self.plotItem.viewRect().top() + y * self.plotItem.viewRect().height()
+            # Map view coordinates to scene coordinates
+            scene_pos = self.plotItem.vb.mapFromView(QPointF(view_x, view_y))
+            textItem.setPos(scene_pos)
+        else:
+            textItem.setPos(x, y)  # Data coordinates
         self.addItem(textItem)
         return textItem
 
@@ -240,6 +247,22 @@ class AxesWidget(pg.PlotWidget):
         if 'label' in kwargs:
             kwargs['name'] = kwargs['label']
         return kwargs
+    
+    def _handle_anchor(self, kwargs):
+        """
+        Handle alignment arguments and return anchor position for pyqtgraph TextItem.
+
+        Converts matplotlib's 'va' and 'ha' to pyqtgraph's anchor.
+        """
+        va = kwargs.pop('vertical_alignment', kwargs.pop('va','center')).lower()
+        ha = kwargs.pop('horizontal_alignment', kwargs.pop('ha','center')).lower()
+
+        # Map Matplotlib's alignment options to pyqtgraph's anchor
+        va_map = {'top': 0, 'center': 0.5, 'bottom': 1}
+        ha_map = {'left': 0, 'center': 0.5, 'right': 1}
+
+        anchor = (ha_map.get(ha, 0.5), va_map.get(va, 0.5))
+        return anchor
     
     def add_legend(self, *args, **kwargs):
         """
@@ -414,7 +437,7 @@ if __name__ == "__main__":
     
     line = ax.axvline(2, color='k', linestyle='--', lw=1)
     
-    txtitem = ax.text(2, 5, "Sample Text", color='red')
+    txtitem = ax.text(2, 4, "Sample Text", color='red', transform='data', horizontal_alignment='left', va='bottom')
 
     ax.set_xlim(left=-1)
     ax.set_ylim(-1, top=20)
