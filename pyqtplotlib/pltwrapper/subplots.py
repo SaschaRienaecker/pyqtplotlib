@@ -30,9 +30,12 @@ class Subplots(Figure):
 
         # Synchronize axes if necessary
         if sharex:
-            self._sync_axes('x')
+            # self._sync_axes('x')
+            share_axes(self.axs, axis='x')
         if sharey:
-            self._sync_axes('y')
+            # self._sync_axes('y')
+            share_axes(self.axs, axis='y')
+            
             
     def get_fig_and_axs(self):
         """Return the figure and a 2D numpy array of Axes unless there is only one axis."""
@@ -44,22 +47,20 @@ class Subplots(Figure):
         else:
             return fig, self.axs
 
+def share_axes(axs, axis='x'):
+    """Synchronize the given axis (x or y) for the given list of `pg.PlotWidget` widgets."""
+    # Use the first plot widget as master
+    
+    master = np.array(axs).flat[0]
+    for pw in np.array(axs).flat:
+        if pw != master:
+            if axis == 'x':
+                pw.getViewBox().setXLink(master.getViewBox())
+            elif axis == 'y':
+                pw.getViewBox().setYLink(master.getViewBox())
 
-    def _sync_axes(self, axis):
-        """Synchronize the given axis (x or y) for all plot widgets."""
-        # Use the first plot widget as master
-        master = self.axs[0, 0]
-        for pw in self.axs.flat:
-            if pw != master:
-                if axis == 'x':
-                    pw.getViewBox().setXLink(master.getViewBox())
-                elif axis == 'y':
-                    pw.getViewBox().setYLink(master.getViewBox())
-
-        # Connect the master's view change signal to the sync function
-        # master.getViewBox().sigRangeChanged.connect(sync_views)
-
-
+    # Connect the master's view change signal to the sync function
+    # master.getViewBox().sigRangeChanged.connect(sync_views)
 
 
 def output_figure_and_axes(func):
