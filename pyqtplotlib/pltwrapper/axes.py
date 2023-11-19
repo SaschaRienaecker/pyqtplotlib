@@ -1,7 +1,7 @@
 #%%
 import pyqtgraph as pg
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QGraphicsItem
 from PyQt5.QtCore import Qt
 from matplotlib import pyplot as plt
 
@@ -9,6 +9,11 @@ pg.setConfigOption('background', 'w')
 pg.setConfigOption('leftButtonPan', False)
 
 
+class MovableTextItem(pg.TextItem):
+    def __init__(self, *args, **kwargs):
+        super(MovableTextItem, self).__init__(*args, **kwargs)
+        self.setFlag(QGraphicsItem.ItemIsMovable)
+        
 class AxesWidget(pg.PlotWidget):
     
     def __init__(self, parent=None, **kwargs):
@@ -80,26 +85,97 @@ class AxesWidget(pg.PlotWidget):
         
         plot_item = self.plot_item.plot(*args, **kwargs, pen=pen)
         return plot_item
-    
-    # def _handle_fmt(self, *args, **kwargs):
-    #     """Handle fmt argument and return modified kwargs."""
-    #     if len(args) == 2:
-    #         fmt = args[1]
-    #     elif len(args) == 3:
-    #         fmt = args[2]
-    #     else:
-    #         fmt = kwargs.get('fmt', None)
-            
-    #     if not isinstance(fmt, str):
-    #         fmt = None
-            
-    #     if fmt is not None:
-    #         # fmt is a positional argument, e.g. plot(x, y, 'ro')
-    #         kwargs['color'] = fmt[0]
-    #         kwargs['marker'] = fmt[1]
-    #         kwargs['linestyle'] = fmt[2:]
-    #     return kwargs
 
+    def axvline(self, x, **kwargs):
+        """
+        Add a vertical line at position x using matplotlib-like syntax.
+        """
+        kwargs_pen = {}
+        kwargs_pen.update(self._handle_color(kwargs))
+        kwargs_pen.update(self._handle_linestyle(kwargs))
+        kwargs_pen.update(self._handle_linewidth(kwargs))
+        
+        pen = pg.mkPen(**kwargs_pen)
+        line = pg.InfiniteLine(pos=x, angle=90, pen=pen)
+        self.addItem(line)
+        return line
+
+    def axhline(self, y, **kwargs):
+        """
+        Add a horizontal line at position y using matplotlib-like syntax.
+        """
+        kwargs_pen = {}
+        kwargs_pen.update(self._handle_color(kwargs))
+        kwargs_pen.update(self._handle_linestyle(kwargs))
+        kwargs_pen.update(self._handle_linewidth(kwargs))
+        
+        pen = pg.mkPen(**kwargs_pen)
+        line = pg.InfiniteLine(pos=y, angle=0, pen=pen)
+        self.addItem(line)
+        return line
+    
+    def text(self, x, y, text, **kwargs):
+        """
+        Add text to the plot at specified coordinates.
+
+        Parameters:
+        - x, y: The coordinates of the text.
+        - text: The text string.
+        - **kwargs: Additional keyword arguments to customize the text appearance.
+        """
+        textItem = MovableTextItem(text, **kwargs)
+        textItem.setPos(x, y)
+        textItem.setText(text)
+        # textItem.setMovable(True)  # Make the text item movable
+        self.addItem(textItem)
+        return textItem
+
+    
+    def _handle_fmt(self, *args, **kwargs):
+        """
+        Handle Matplotlib-style format strings.
+
+        Args:
+            args: The arguments passed to the plot method.
+            kwargs: The keyword arguments passed to the plot method.
+
+        Returns:
+            Updated kwargs with color, marker, and linestyle extracted from format string.
+        """
+        if args and isinstance(args[-1], str) and len(args) > 1:
+            fmt = args[-1]
+            args = args[:-1]
+
+            # Color shorthand (e.g., 'r' for red)
+            color_shorthand = {'b': 'blue', 'g': 'green', 'r': 'red', 'c': 'cyan',
+                               'm': 'magenta', 'y': 'yellow', 'k': 'black', 'w': 'white'}
+
+            # Marker shorthand
+            marker_shorthand = {'o': 'o', 's': 'square', '^': 't', 'd': 'd',
+                                '+': 'plus', 'x': 'x', '*': 'star'}
+
+            # Line style shorthand
+            linestyle_shorthand = {'-': '-', '--': '--', '-.': '-.', ':': ':'}
+
+            for key in color_shorthand:
+                if key in fmt:
+                    kwargs['color'] = color_shorthand[key]
+                    fmt = fmt.replace(key, '', 1)
+                    break
+
+            for key in marker_shorthand:
+                if key in fmt:
+                    kwargs['marker'] = marker_shorthand[key]
+                    fmt = fmt.replace(key, '', 1)
+                    break
+
+            for key in linestyle_shorthand:
+                if key in fmt:
+                    kwargs['linestyle'] = linestyle_shorthand[key]
+                    fmt = fmt.replace(key, '', 1)
+                    break
+
+        return args, kwargs
 
     def _handle_color(self, kwargs):
         """Handle color arguments and return modified kwargs_pen."""
@@ -143,7 +219,7 @@ class AxesWidget(pg.PlotWidget):
     def _handle_marker(self, kwargs, kwargs_pen):
         """Handle marker arguments and return modified kwargs."""
         marker_mapping = {
-            'o': 'o', 's': 's', 'd': 'd', '^': '^', 'x': 'x', '+': '+',
+            'o': 'o', 's': 's', 'd': 'd', '^': '^', 'x': 'x', '+': '+','|': 't1', 'v': 'v', '>': '>',
             # Extend with more marker types if needed
         }
         symbol = marker_mapping.get(kwargs.pop('marker', None), None)
@@ -335,6 +411,10 @@ if __name__ == "__main__":
     x = [0, 1, 2, 3, 4]
     y = [0, 1, 4, 9, 16]
     curve = ax.plot(x, y, color='r', linestyle='--', marker='+', markersize=10, lw=1, label='data')
+    
+    line = ax.axvline(2, color='k', linestyle='--', lw=1)
+    
+    txtitem = ax.text(2, 5, "Sample Text", color='red')
 
     ax.set_xlim(left=-1)
     ax.set_ylim(-1, top=20)
