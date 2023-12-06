@@ -279,47 +279,64 @@ class AxesWidget(pg.PlotWidget):
         self.default_legend.show()
     
 
-    def imshow(self, data, colormap=None, levels=None, aspect='square', autoRange=True, **kwargs):
+    def imshow(self, data, colormap=None, levels=None, aspect='auto', autoRange=True, interpolation='nearest', antialias=False, **kwargs):
         """
         Display an image on the AxesWidget.
 
         Parameters:
         - data: 2D numpy array
-        - colormap: a pyqtgraph.ColorMap or string specifying the colormap (e.g. 'viridis')
+        - colormap: a pyqtgraph.ColorMap, a string specifying the colormap (e.g. 'viridis'), or a matplotlib colormap
         - levels: (min, max) tuple specifying the data range that corresponds to the 
-                  minimum and maximum display brightness levels
+                minimum and maximum display brightness levels
         - aspect: 'square' to enforce square pixels, 'auto' to stretch the image to fill the axis
         - autoRange: bool, whether to automatically adjust the view to fit image dimensions
+        - interpolation: string, specifies the interpolation method ('nearest', 'bilinear', etc.)
+        - antialias: bool, whether to enable antialiasing (note: limited support for images)
         - **kwargs: other keyword arguments to customize the ImageItem
         """
-        
-        from pyqtgraph import ImageItem, ColorMap
-        # Create an ImageItem with the data
-        img_item = ImageItem(data, **kwargs)
 
+        from pyqtgraph import ImageItem, ColorMap, colormap as pg_colormap
+        import matplotlib as mpl
+        import numpy as np
+        
+        # need to transpose the data to match the image orientation in matplotlib
+        _data = np.array(data).T
+        
+        # Create an ImageItem with the data and additional options
+        img_item = ImageItem(_data, antialias=antialias, **kwargs)
+
+        # Set color map
         if colormap:
             if isinstance(colormap, str):
                 # Get colormap from string
-                colormap = pg.colormap.getFromMatplotlib(colormap)
+                colormap = pg_colormap.get(colormap)
+            elif isinstance(colormap, mpl.colors.Colormap):
+                # Convert matplotlib colormap to PyQtGraph colormap
+                colormap = pg_colormap.getFromMatplotlib(colormap)
             img_item.setLookupTable(colormap.getLookupTable())
 
+        # Set levels if provided
         if levels:
             img_item.setLevels(levels)
 
         # Add the image to the plot
         self.addItem(img_item)
 
-        # Set aspect
+        # Set aspect ratio
         if aspect == 'square':
             self.setAspectLocked(True)
         elif aspect == 'auto':
             self.setAspectLocked(False)
 
-        # Adjust view
+        # Adjust view range if autoRange is True
         if autoRange:
             self.autoRange()
 
+        # Set interpolation method
+        img_item.setOpts(interpolate=interpolation == 'bilinear')
+
         return img_item
+
 
 
     def _apply_matplotlib_color_cycle(self):
