@@ -279,41 +279,52 @@ class AxesWidget(pg.PlotWidget):
         self.default_legend.show()
     
 
-    def imshow(self, data, colormap=None, levels=None, aspect='auto', autoRange=True, interpolation='nearest', antialias=False, **kwargs):
+    def imshow(self, data, cmap=None, levels=None, aspect='auto', extent=None, autoRange=True, interpolation='nearest', antialias=False, **kwargs):
         """
         Display an image on the AxesWidget.
 
         Parameters:
         - data: 2D numpy array
-        - colormap: a pyqtgraph.ColorMap, a string specifying the colormap (e.g. 'viridis'), or a matplotlib colormap
+        - cmap: a pyqtgraph.ColorMap, a string specifying the colormap (e.g. 'viridis'), or a matplotlib colormap
         - levels: (min, max) tuple specifying the data range that corresponds to the 
                 minimum and maximum display brightness levels
         - aspect: 'square' to enforce square pixels, 'auto' to stretch the image to fill the axis
+        - extent : floats (left, right, bottom, top), optional
         - autoRange: bool, whether to automatically adjust the view to fit image dimensions
         - interpolation: string, specifies the interpolation method ('nearest', 'bilinear', etc.)
         - antialias: bool, whether to enable antialiasing (note: limited support for images)
         - **kwargs: other keyword arguments to customize the ImageItem
         """
 
-        from pyqtgraph import ImageItem, ColorMap, colormap as pg_colormap
+        from pyqtgraph import ImageItem, colormap as pg_colormap
         import matplotlib as mpl
         import numpy as np
         
         # need to transpose the data to match the image orientation in matplotlib
         _data = np.array(data).T
         
+        
+        rect = kwargs.pop('rect', None)
+        
+        if rect is None:
+            if extent is None:
+                extent = (0, _data.shape[1], 0, _data.shape[0])
+            # translate extent to pyqtgraph's rect (x0, y0, width, height):
+            rect = (extent[0], extent[2], extent[1]-extent[0], extent[3]-extent[2])
+            
+        
         # Create an ImageItem with the data and additional options
-        img_item = ImageItem(_data, antialias=antialias, **kwargs)
+        img_item = ImageItem(_data, antialias=antialias, rect=rect, **kwargs)
 
         # Set color map
-        if colormap:
-            if isinstance(colormap, str):
+        if cmap:
+            if isinstance(cmap, str):
                 # Get colormap from string
-                colormap = pg_colormap.get(colormap)
-            elif isinstance(colormap, mpl.colors.Colormap):
+                cmap = pg_colormap.get(cmap)
+            elif isinstance(cmap, mpl.colors.Colormap):
                 # Convert matplotlib colormap to PyQtGraph colormap
-                colormap = pg_colormap.getFromMatplotlib(colormap)
-            img_item.setLookupTable(colormap.getLookupTable())
+                cmap = pg_colormap.getFromMatplotlib(cmap)
+            img_item.setLookupTable(cmap.getLookupTable())
 
         # Set levels if provided
         if levels:
@@ -433,35 +444,44 @@ class AxesWidget(pg.PlotWidget):
 
 
 if __name__ == "__main__":
-    app = 0
-    app = QApplication(sys.argv)
-    window = QMainWindow()
-
     # Register the signal handler for keyboard interrupt (Ctrl+C)
     import signal
     signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-    # Create a custom plot widget
-    ax = AxesWidget()
+    app = 0
+    app = QApplication(sys.argv)
 
-    # Add the plot widget to the main window
-    window.setCentralWidget(ax)
-    window.setGeometry(100, 100, 800, 600)
+    import pyqtplotlib as qtplt
+    fig, axs = qtplt.subplots(1,2, figsize=(8,4))
+    
+    # Create a custom plot widget
+    # ax1 = AxesWidget()
+    ax = axs[0,0]
+
     # Plot some data
     x = [0, 1, 2, 3, 4]
     y = [0, 1, 4, 9, 16]
     curve = ax.plot(x, y, color='r', linestyle='--', marker='+', markersize=10, lw=1, label='data')
-    
     line = ax.axvline(2, color='k', linestyle='--', lw=1)
-    
     txtitem = ax.text(2, 4, "Sample Text", color='red', transform='data', horizontal_alignment='left', va='bottom')
-
     ax.set_xlim(left=-1)
     ax.set_ylim(-1, top=20)
     # ax.set_ylim(bottom=-1)
 
+    import numpy as np
+    # ax2 = AxesWidget()
+    ax = axs[0,1]
+    im = ax.imshow(np.random.rand(10,10), extent=(-10,5,-3,3))
+    
+    
+    window = QMainWindow()
+    # Add the plot widget to the main window
+    window.setCentralWidget(ax)
+    window.setGeometry(100, 100, 800, 600)
     window.show()
-    sys.exit(app.exec_())
+    
+    fig.show()
+    app.exec_()
 
 
                        # %%

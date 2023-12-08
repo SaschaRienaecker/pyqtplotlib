@@ -42,6 +42,13 @@ class TestAxesWidget(unittest.TestCase):
         # app.aboutToQuit.connect(app.deleteLater)
         # sys.exit(app.exec_())
 
+    def test_imshow(self):
+        
+        data = np.random.rand(10,10)
+        im = self.ax.imshow(data, extent=(-10,5,-3,3), cmap='plasma')
+
+
+    
     def tearDown(self):
         # Cleanup runs after each test method
         self.ax.close()
