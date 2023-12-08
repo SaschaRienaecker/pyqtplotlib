@@ -9,7 +9,7 @@ setup(
     install_requires=[
         # List the dependencies your package needs
         'pyqt5',
-        'pyqtgraph',
+        'pyqtgraph>=0.12.4',
         'numpy',
         'scipy',
         'matplotlib',
