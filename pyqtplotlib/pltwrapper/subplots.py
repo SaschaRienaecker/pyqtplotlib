@@ -9,7 +9,9 @@ from pyqtplotlib.pltwrapper.axes import AxesWidget
 
 class Subplots(Figure):
     
-    def __init__(self, nrows=1, ncols=1, sharex=False, sharey=False, axwidget=AxesWidget, parent=None, **figure_kwargs):
+    ppy = 96 # typical pixels per inch (for conversion from matplotlib inches to Qt pixels)
+    
+    def __init__(self, nrows=1, ncols=1, sharex=False, sharey=False, figsize=None, axwidget=AxesWidget, parent=None, **figure_kwargs):
         super().__init__(parent=parent, **figure_kwargs)
             
         self.axs = np.empty((nrows, ncols), dtype=object)
@@ -35,6 +37,12 @@ class Subplots(Figure):
         if sharey:
             # self._sync_axes('y')
             share_axes(self.axs, axis='y')
+            
+        if figsize is not None:
+            # convert from matplotlib inches to Qt pixels:
+            geom = (0, 0, int(figsize[0]*Subplots.ppy), int(figsize[1]*Subplots.ppy))
+            print(geom)
+            self.setGeometry(*geom)
             
             
     def get_fig_and_axs(self):
@@ -70,7 +78,7 @@ def output_figure_and_axes(func):
     return wrapper
 
 @output_figure_and_axes
-def subplots(nrows=1, ncols=1, sharex=False, sharey=False, axwidget=AxesWidget, parent=None):
+def subplots(nrows=1, ncols=1, sharex=False, sharey=False, figsize=None, axwidget=AxesWidget, parent=None):
     """Create a figure with a set of subplots (wrapper function for calling the `Subplots` class)
 
     This utility wrapper makes it convenient to create common layouts of
@@ -81,6 +89,7 @@ def subplots(nrows=1, ncols=1, sharex=False, sharey=False, axwidget=AxesWidget, 
     nrows, ncols : int
         Number of rows/columns of the subplot grid.
     sharex, sharey : bool, default: False
+    figsize: tuple of (width, height) in inches, default: None
     axwidget : Widget to use, default: AxesWidget (the base class for all axes widgets)
     
     Returns
@@ -90,7 +99,7 @@ def subplots(nrows=1, ncols=1, sharex=False, sharey=False, axwidget=AxesWidget, 
     axs : array of Axes
     """
     _subplots = Subplots(nrows, ncols, sharex=sharex,
-                         sharey=sharey, axwidget=axwidget, parent=parent)
+                         sharey=sharey, figsize=figsize, axwidget=axwidget, parent=parent)
     fig, axs = _subplots.get_fig_and_axs()
     return fig, axs
     
@@ -106,15 +115,13 @@ if __name__ == "__main__":
 
     
     import pyqtplotlib as qtplt
-    fig, axs = qtplt.subplots(2, 3, sharex=True, sharey=True)
+    fig, axs = qtplt.subplots(2, 3, sharex=True, sharey=True, figsize=(7,5))
     
     axs[0,0].plot([1, 2, 3], [1, 2, 3])
     axs[0, 2].plot([1, 2, 3], [1, 2, 3])
     axs[1,0].set_title('Test')
     
-    fig.setGeometry(100, 100, 1500, 600)
 
     fig.show()
     app.exec_()
 
-# %%
