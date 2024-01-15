@@ -207,7 +207,9 @@ class AxesWidget(pg.PlotWidget):
             '-.': pg.QtCore.Qt.DashDotLine,
         }
         kwargs_pen = kwargs.get('pen', {})  # Retrieve existing pen kwargs or initialize an empty dict
-        style = linestyle_mapping.get(kwargs.pop('linestyle', '-'), pg.QtCore.Qt.SolidLine)
+        
+        ls = kwargs.pop('linestyle', kwargs.pop('ls', '-'))
+        style = linestyle_mapping.get(ls, pg.QtCore.Qt.SolidLine)
         kwargs_pen['style'] = style
         return kwargs_pen
 
@@ -317,13 +319,9 @@ class AxesWidget(pg.PlotWidget):
         img_item = ImageItem(_data, antialias=antialias, rect=rect, **kwargs)
 
         # Set color map
-        if cmap:
-            if isinstance(cmap, str):
-                # Get colormap from string
-                cmap = pg_colormap.get(cmap)
-            elif isinstance(cmap, mpl.colors.Colormap):
-                # Convert matplotlib colormap to PyQtGraph colormap
-                cmap = pg_colormap.getFromMatplotlib(cmap)
+        if cmap is not None:
+            
+            cmap = mpl_to_pg_cmap(cmap)
             img_item.setLookupTable(cmap.getLookupTable())
 
         # Set levels if provided
@@ -441,7 +439,31 @@ class AxesWidget(pg.PlotWidget):
 
 # Usage can be similar, and extending this further will enhance its capabilities.
 
+def mpl_to_pg_cmap(mpl_cmap):
+    """ Convert a Matplotlib colormap to a PyQTGraph colormap.
+    Args:
+        mpl_cmap: A Matplotlib colormap, or a string with the name of a Matplotlib colormap.
+    Example:
+        pg_cmap = mpl_to_pg_cmap(plt.cm.get_cmap('seismic'))
+    """
+    import numpy as np
+    import pyqtgraph as pg
+    import matplotlib.pyplot as plt
+    
+    if isinstance(mpl_cmap, str):
+        # Get the Matplotlib colormap
+        mpl_cmap = plt.cm.get_cmap(mpl_cmap)
 
+
+    # Sample colors from the colormap
+    num_colors = 256  # Number of colors to sample
+    positions = np.linspace(0, 1, num_colors)  # Positions where we sample the colormap
+    colors = (mpl_cmap(positions)[:,:3] * 255).astype(np.uint8)  # Convert to 0-255 RGB values
+
+    # Create a PyQTGraph ColorMap
+    pg_cmap = pg.ColorMap(positions, colors, mapping=pg.ColorMap.CLIP)
+    
+    return pg_cmap
 
 if __name__ == "__main__":
     # Register the signal handler for keyboard interrupt (Ctrl+C)
