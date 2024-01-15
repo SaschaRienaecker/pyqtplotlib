@@ -26,6 +26,8 @@ class ROIAxesWidget(pg.PlotWidget):
         self.shiftPressed = False
         self.roiStart = None
         
+        
+        
         # Connect ROI event with additional argument using lambda
         self.roi.sigRegionChangeFinished.connect(lambda: self.onROIChanged(inverted=False))
 
@@ -43,31 +45,29 @@ class ROIAxesWidget(pg.PlotWidget):
         """Override to add custom functionality.This method is called when the ROI is changed.
         The `inverted` argument is used to invert the logic of the ROI, when holding Shift.
         """
-        pass        
-        
+        pass
+            
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_E:
             self.ePressed = True
-            if event.modifiers() & QtCore.Qt.ShiftModifier:
-                # Connect with inverted logic
-                self.roi.sigRegionChangeFinished.disconnect()
-                self.roi.sigRegionChangeFinished.connect(lambda: self.onROIChanged(inverted=True))
-            else:
-                # Connect with normal logic
-                self.roi.sigRegionChangeFinished.disconnect()
-                self.roi.sigRegionChangeFinished.connect(lambda: self.onROIChanged(inverted=False))
-        super().keyPressEvent(event)
 
+        if event.key() == QtCore.Qt.Key_Shift:
+            self.shiftPressed = True
+
+        super().keyPressEvent(event)
+        
+        
     def keyReleaseEvent(self, event):
         if event.key() == QtCore.Qt.Key_E:
             self.ePressed = False
-            # Revert to default connection
-            self.roi.sigRegionChangeFinished.disconnect()
-            self.roi.sigRegionChangeFinished.connect(lambda: self.onROIChanged(inverted=False))
+            
+        if event.key() == QtCore.Qt.Key_Shift:
+            self.shiftPressed = False
+            
         super().keyReleaseEvent(event)
     
     def mousePressEvent(self, event):
-        if self.ePressed:
+        if self.ePressed and event.button() == QtCore.Qt.LeftButton:
             self.roi.show()
             self.roiStart = self.plotItem.vb.mapSceneToView(event.pos())
             self.roi.setPos(self.roiStart, update=False)
@@ -76,14 +76,14 @@ class ROIAxesWidget(pg.PlotWidget):
             super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
-        if self.ePressed and self.roiStart is not None:
+        if self.roiStart is not None:
             currentPos = self.plotItem.vb.mapSceneToView(event.pos())
             self.roi.setSize(currentPos - self.roiStart)
         else:
             super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
-        if self.ePressed:
+        if event.button() == QtCore.Qt.LeftButton:
             self.roi.hide()
             self.roiStart = None
         else:
