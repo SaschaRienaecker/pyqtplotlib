@@ -23,13 +23,12 @@ class ROIAxesWidget(pg.PlotWidget):
         self.roi.hide()
         # self.ctrlPressed = False
         self.ePressed = False
-        self.shiftPressed = False
         self.roiStart = None
         
         
         
         # Connect ROI event with additional argument using lambda
-        self.roi.sigRegionChangeFinished.connect(lambda: self.onROIChanged(inverted=False))
+        self.roi.sigRegionChangeFinished.connect(lambda: self.onROIChanged())
 
     def set_data(self, x, y, **plot_kwargs):
         self.data = (np.array(x), np.array(y))
@@ -41,7 +40,7 @@ class ROIAxesWidget(pg.PlotWidget):
     
     
 
-    def onROIChanged(self, inverted=False):
+    def onROIChanged(self):
         """Override to add custom functionality.This method is called when the ROI is changed.
         The `inverted` argument is used to invert the logic of the ROI, when holding Shift.
         """
