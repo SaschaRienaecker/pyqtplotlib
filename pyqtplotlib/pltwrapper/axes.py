@@ -323,6 +323,7 @@ class AxesWidget(pg.PlotWidget):
             
             cmap = mpl_to_pg_cmap(cmap)
             img_item.setLookupTable(cmap.getLookupTable())
+            img_item.cmap = cmap
 
         # Set levels if provided
         if levels:
@@ -390,6 +391,14 @@ class AxesWidget(pg.PlotWidget):
             self.plotItem.setYRange(ymin,   top)
         else:
             raise ValueError("Must specify at least one of 'bottom' or 'top'.")
+        
+    def get_xlim(self):
+        """Get x-axis limits."""
+        return self.plotItem.viewRange()[0]
+    
+    def get_ylim(self):
+        """Get y-axis limits."""
+        return self.plotItem.viewRange()[1]
                
     def set_yscale(self, scale_type):
         """
@@ -465,6 +474,62 @@ def mpl_to_pg_cmap(mpl_cmap):
     
     return pg_cmap
 
+import pyqtgraph as pg
+from PyQt5.QtWidgets import QVBoxLayout, QSlider, QWidget
+from PyQt5.QtCore import Qt
+
+def add_colorbar_with_interaction(img_item, colormap='viridis'):
+    # Create a layout for the ImageView and the sliders
+    layout = QVBoxLayout()
+    # layout.addWidget(image_view)
+
+    # Create and configure sliders for vmin and vmax
+    vmin_slider = QSlider(Qt.Horizontal)
+    vmax_slider = QSlider(Qt.Horizontal)
+    vmin_slider.setRange(-200, 200)
+    vmax_slider.setRange(-200, 200)
+    vmin_slider.setValue(0)
+    vmax_slider.setValue(100)
+
+    layout.addWidget(vmin_slider)
+    layout.addWidget(vmax_slider)
+
+    # Create a colorbar as a separate GraphicsLayoutWidget
+    colorbar_layout = pg.GraphicsLayoutWidget()
+    colorbar_plot = colorbar_layout.addPlot()
+    # colorbar_plot.hideAxis('bottom')
+    colorbar_plot.hideAxis('left')
+    colorbar_plot.showAxis('right')
+    colorbar_plot.getAxis('right').setTicks([])
+
+    # Create a gradient for the colorbar
+    gradient = pg.GradientWidget(orientation='right')
+    gradient.loadPreset(colormap)
+    # Create an ImageItem for the gradient
+    gradItem = pg.ImageItem()
+    colorbar_plot.addItem(gradItem)
+    
+    gradItem.setImage(img_item.cmap.getLookupTable())
+
+    # Add colorbar to layout
+    layout.addWidget(colorbar_layout)
+
+    # Container widget
+    container = QWidget()
+    container.setLayout(layout)
+
+    # Function to update image with new vmin and vmax
+    def update_image():
+        vmin = vmin_slider.value() / 100
+        vmax = vmax_slider.value() / 100
+        img_item.setLevels([vmin, vmax])
+
+    # Connect sliders to update function
+    vmin_slider.valueChanged.connect(update_image)
+    vmax_slider.valueChanged.connect(update_image)
+    
+    return container
+
 if __name__ == "__main__":
     # Register the signal handler for keyboard interrupt (Ctrl+C)
     import signal
@@ -489,21 +554,26 @@ if __name__ == "__main__":
     ax.set_xlim(left=-1)
     ax.set_ylim(-1, top=20)
     # ax.set_ylim(bottom=-1)
+    
+    print(ax.get_xlim())
+    print(ax.get_ylim())
 
-    import numpy as np
-    # ax2 = AxesWidget()
-    ax = axs[0,1]
-    im = ax.imshow(np.random.rand(10,10), extent=(-10,5,-3,3))
+    # import numpy as np
+    # # ax2 = AxesWidget()
+    # ax = axs[0,1]
+    # im = ax.imshow(np.random.rand(10,10), extent=(-10,5,-3,3), cmap='viridis')
     
-    
-    window = QMainWindow()
+    # container = add_colorbar_with_interaction(im)
+    # container.show()
+    # window = QMainWindow()
     # Add the plot widget to the main window
-    window.setCentralWidget(ax)
-    window.setGeometry(100, 100, 800, 600)
-    window.show()
+    # window.setCentralWidget(ax)
+    # window.setGeometry(100, 100, 800, 600)
+    # window.show()
     
     fig.show()
     app.exec_()
 
 
-                       # %%
+
+# %%
