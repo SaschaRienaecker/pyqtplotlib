@@ -85,7 +85,7 @@ class ROIAxesWidget(pg.PlotWidget):
         if event.button() == QtCore.Qt.LeftButton:
             self.roi.hide()
             self.roiStart = None
-        else:
+        # else: CAREFUL: The `else` was a big mistake as it prevented the default behavior of the mouseReleaseEvent, hence the comment. Keep it for pedagogical reasons though.
             super().mouseReleaseEvent(event)
         
 
