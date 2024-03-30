@@ -27,7 +27,7 @@ class AxesWidget(pg.PlotWidget):
 
         self.hover_label = QLabel(self)
         self.hover_label.setAlignment(Qt.AlignCenter)
-        self.hover_label.setGeometry(10, 10, 150, 20)
+        self.hover_label.setGeometry(10, 10, 150, 15)
 
         self.setMouseEnabled(x=True, y=True)
         self.setAntialiasing(True)
@@ -56,10 +56,10 @@ class AxesWidget(pg.PlotWidget):
 
     def _hoveredEvent(self, pos):
         """Update hover label with data coordinates."""
+        # to be implemented: hide if mouse is outside the plot
         data_pos = self.plot_item.getViewBox().mapSceneToView(pos)
         self.hover_label.setText(
-            "({:.1f}, {:.1f})".format(data_pos.x(), data_pos.y()))
-
+            "({:.3g}, {:.3g})".format(data_pos.x(), data_pos.y()))
 
     def get_xy_data(self, item_index=0):
         """Retrieve x and y data from the plot for a given index."""
