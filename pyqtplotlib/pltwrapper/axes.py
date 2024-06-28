@@ -281,7 +281,8 @@ class AxesWidget(pg.PlotWidget):
         self.default_legend.show()
     
 
-    def imshow(self, data, cmap=None, levels=None, aspect='auto', extent=None, autoRange=True, interpolation='nearest', antialias=False, **kwargs):
+    def imshow(self, data, cmap=None, levels=None, aspect='auto', extent=None, autoRange=True, 
+               interpolation='nearest', antialias=False, vmin=None, vmax=None, **kwargs):
         """
         Display an image on the AxesWidget.
 
@@ -295,6 +296,8 @@ class AxesWidget(pg.PlotWidget):
         - autoRange: bool, whether to automatically adjust the view to fit image dimensions
         - interpolation: string, specifies the interpolation method ('nearest', 'bilinear', etc.)
         - antialias: bool, whether to enable antialiasing (note: limited support for images)
+        - vmin: float, minimum data value that corresponds to the minimum colormap level
+        - vmax: float, maximum data value that corresponds to the maximum colormap level
         - **kwargs: other keyword arguments to customize the ImageItem
         """
 
@@ -325,9 +328,13 @@ class AxesWidget(pg.PlotWidget):
             img_item.setLookupTable(cmap.getLookupTable())
             img_item.cmap = cmap
 
-        # Set levels if provided
-        if levels:
+        # Determine levels using levels, vmin, and vmax
+        if levels is not None:
             img_item.setLevels(levels)
+        else:
+            if vmin is not None or vmax is not None:
+                levels = [vmin, vmax]
+                img_item.setLevels(levels)
 
         # Add the image to the plot
         self.addItem(img_item)
