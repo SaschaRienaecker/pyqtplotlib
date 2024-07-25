@@ -282,7 +282,7 @@ class AxesWidget(pg.PlotWidget):
     
 
     def imshow(self, data, cmap=None, levels=None, aspect='auto', extent=None, autoRange=True, 
-               interpolation='nearest', antialias=False, vmin=None, vmax=None, **kwargs):
+               interpolation='bilinear', antialias=True, vmin=None, vmax=None, **kwargs):
         """
         Display an image on the AxesWidget.
 
@@ -307,7 +307,6 @@ class AxesWidget(pg.PlotWidget):
         
         # need to transpose the data to match the image orientation in matplotlib
         _data = np.array(data).T
-        
         
         rect = kwargs.pop('rect', None)
         
@@ -351,7 +350,9 @@ class AxesWidget(pg.PlotWidget):
 
         # Set interpolation method
         img_item.setOpts(interpolate=interpolation == 'bilinear')
-
+        
+        img_item.setOpts(autoDownsample=True) # image automatically downsampled to match the screen resolution
+        
         return img_item
 
 
