@@ -186,15 +186,21 @@ class AxesWidget(pg.PlotWidget):
 
     def _handle_color(self, kwargs):
         """Handle color arguments and return modified kwargs_pen."""
-        kwargs_pen = kwargs.get(
-            'pen', {})  # Retrieve existing pen kwargs or initialize an empty dict
+        kwargs_pen = kwargs.get('pen', {})  # Retrieve existing pen kwargs or initialize an empty dict
+
         if 'color' in kwargs:
-            kwargs_pen['color'] = kwargs.pop('color')
+            color = kwargs.pop('color')
+            if isinstance(color, str) and color.startswith('C') and color[1:].isdigit():
+                # Interpret 'C0', 'C1', etc. as matplotlib-like color cycle
+                index = int(color[1:])
+                if index < len(self._mpl_color_cycle):
+                    color = self._mpl_color_cycle[index]
+            kwargs_pen['color'] = color
         else:
-            num_items = len([item for item in self.getPlotItem(
-            ).items if isinstance(item, pg.PlotDataItem)])
-            col = self._color_cycle[num_items % len(self._color_cycle)]
+            num_items = len([item for item in self.getPlotItem().items if isinstance(item, pg.PlotDataItem)])
+            col = self._mpl_color_cycle[num_items % len(self._mpl_color_cycle)]
             kwargs_pen['color'] = col
+
         return kwargs_pen
 
 
@@ -360,7 +366,7 @@ class AxesWidget(pg.PlotWidget):
     def _apply_matplotlib_color_cycle(self):
         """Apply default Matplotlib color cycle to the plot."""
         prop_cycle = plt.rcParams['axes.prop_cycle']
-        self._color_cycle = prop_cycle.by_key()['color']
+        self._mpl_color_cycle = prop_cycle.by_key()['color']
 
     def set_xlabel(self, label):
         """Set x-axis label."""
@@ -556,7 +562,7 @@ if __name__ == "__main__":
     # Plot some data
     x = [0, 1, 2, 3, 4]
     y = [0, 1, 4, 9, 16]
-    curve = ax.plot(x, y, color='r', linestyle='--', marker='+', markersize=10, lw=1, label='data')
+    curve = ax.plot(x, y, color='C1', linestyle='--', marker='+', markersize=10, lw=1, label='data')
     line = ax.axvline(2, color='k', linestyle='--', lw=1)
     txtitem = ax.text(2, 4, "Sample Text", color='red', transform='data', horizontal_alignment='left', va='bottom')
     ax.set_xlim(left=-1)
