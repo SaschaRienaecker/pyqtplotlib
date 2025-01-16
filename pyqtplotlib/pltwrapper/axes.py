@@ -16,7 +16,7 @@ class MovableTextItem(pg.TextItem):
         
 class AxesWidget(pg.PlotWidget):
     
-    def __init__(self, parent=None, **kwargs):
+    def __init__(self, parent=None,  **kwargs):
         super().__init__(parent=parent, **kwargs)
         
         self.setParent(parent)
@@ -28,6 +28,7 @@ class AxesWidget(pg.PlotWidget):
         self.hover_label = QLabel(self)
         self.hover_label.setAlignment(Qt.AlignCenter)
         self.hover_label.setGeometry(10, 10, 150, 15)
+        
 
         self.setMouseEnabled(x=True, y=True)
         self.setAntialiasing(True)
@@ -57,6 +58,10 @@ class AxesWidget(pg.PlotWidget):
     def _hoveredEvent(self, pos):
         """Update hover label with data coordinates."""
         # to be implemented: hide if mouse is outside the plot
+        # if not self.plot_item.sceneBoundingRect().contains(pos):
+        #     self.hover_label.hide()
+        # else:
+            # self.hover_label.show()
         data_pos = self.plot_item.getViewBox().mapSceneToView(pos)
         self.hover_label.setText(
             "({:.3g}, {:.3g})".format(data_pos.x(), data_pos.y()))
@@ -200,6 +205,12 @@ class AxesWidget(pg.PlotWidget):
             num_items = len([item for item in self.getPlotItem().items if isinstance(item, pg.PlotDataItem)])
             col = self._mpl_color_cycle[num_items % len(self._mpl_color_cycle)]
             kwargs_pen['color'] = col
+            
+        # translate color to pen color:
+        kwargs_pen['color'] = pg.mkColor(kwargs_pen['color'])
+            
+        if 'alpha' in kwargs:
+            kwargs_pen['color'].setAlphaF(kwargs.pop('alpha'))
 
         return kwargs_pen
 
@@ -459,6 +470,50 @@ class AxesWidget(pg.PlotWidget):
             # Trigger auto scaling when "Esc" is pressed
             self.autoBtnClicked()
         super(AxesWidget, self).keyPressEvent(event)
+        
+        
+    def set_xticks(self, ticks):
+        """Set the x-axis ticks of the plot."""
+        if ticks == []:
+            # Hide x-axis ticks
+            self.plot_item.getAxis('bottom').setTicks([])
+        else:
+            # Set specific ticks
+            # self.plot_item.getAxis('bottom').setTicks(ticks)
+            raise NotImplementedError("Setting specific x-ticks is not implemented yet.")
+        
+    def set_yticks(self, ticks):
+        """Set the y-axis ticks of the plot."""
+        if ticks == []:
+            # Hide y-axis ticks
+            self.plot_item.getAxis('left').setTicks([])
+        else:
+            # Set specific ticks
+            # self.plot_item.getAxis('left').setTicks(ticks)
+            raise NotImplementedError("Setting specific y-ticks is not implemented yet.")
+    
+    def set_xticklabels(self, labels):
+        """Set the x-axis tick labels of the plot."""
+        if labels == []:
+            # Hide x-axis tick labels
+            self.plot_item.getAxis('bottom').setStyle(showValues=False)
+        else:
+            # Set specific labels
+            # tick_positions = plot.getAxis('bottom').ticks()[0]
+            # tick_labels = [(pos, labels[i]) for i, (pos, _) in enumerate(tick_positions)]
+            # self.plot_item.getAxis('bottom').setTicks(tick_labels)
+            raise NotImplementedError("Setting specific x-tick labels is not implemented yet.")
+            
+    def set_yticklabels(self, labels):
+        """Set the y-axis tick labels of the plot."""
+        if labels == []:
+            # Hide y-axis tick labels
+            self.plot_item.getAxis('left').setStyle(showValues=False)
+        else:
+            # Set specific labels
+            raise NotImplementedError("Setting specific y-tick labels is not implemented yet.")
+
+    
 
 # Usage can be similar, and extending this further will enhance its capabilities.
 
@@ -567,6 +622,8 @@ if __name__ == "__main__":
     txtitem = ax.text(2, 4, "Sample Text", color='red', transform='data', horizontal_alignment='left', va='bottom')
     ax.set_xlim(left=-1)
     ax.set_ylim(-1, top=20)
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
     # ax.set_ylim(bottom=-1)
     
     print(ax.get_xlim())
