@@ -27,7 +27,7 @@ class AxesWidget(pg.PlotWidget):
 
         self.hover_label = QLabel(self)
         self.hover_label.setAlignment(Qt.AlignCenter)
-        self.hover_label.setGeometry(10, 10, 150, 15)
+        self.hover_label.setGeometry(0, 0, 150, 15)
         
 
         self.setMouseEnabled(x=True, y=True)
@@ -77,12 +77,17 @@ class AxesWidget(pg.PlotWidget):
 
     def plot(self, *args, **kwargs):
         """Plot data with arguments similar to Matplotlib."""
+        
         kwargs_pen = {}
         kwargs_pen.update(self._handle_color(kwargs))
-        kwargs_pen.update(self._handle_linestyle(kwargs))
-        kwargs_pen.update(self._handle_linewidth(kwargs))
-        # kwargs = self._handle_fmt(*args, **kwargs)
-        pen = pg.mkPen(**kwargs_pen)
+
+        linestyle_pen = self._handle_linestyle(kwargs)
+        if linestyle_pen is None:
+            pen = None  # No line should be drawn
+        else:
+            kwargs_pen.update(linestyle_pen)
+            kwargs_pen.update(self._handle_linewidth(kwargs))
+            pen = pg.mkPen(**kwargs_pen)
         
         # ... other handle methods which do not comncern the pen ...
         kwargs = self._handle_marker(kwargs, kwargs_pen)
@@ -90,6 +95,64 @@ class AxesWidget(pg.PlotWidget):
         
         plot_item = self.plot_item.plot(*args, **kwargs, pen=pen)
         return plot_item
+    
+    def scatter(self, x, y, c=None, s=10, cmap='viridis', vmin=None, vmax=None, **kwargs):
+        """
+        Create a scatter plot on the AxesWidget, similar to matplotlib.pyplot.scatter.
+
+        Parameters:
+        - x, y: 1D arrays or lists of coordinates
+        - c: color(s) of points; can be a single color or a sequence mapped through a colormap
+        - s: size of points (single value or array of values)
+        - cmap: colormap name or matplotlib colormap
+        - vmin, vmax: normalization range for colormap when 'c' is numeric
+        - **kwargs: passed to pyqtgraph.ScatterPlotItem
+        """
+
+        from pyqtgraph import ScatterPlotItem
+        import numpy as np
+        import matplotlib.cm as cm
+        import matplotlib.colors as mcolors
+
+        x = np.asarray(x)
+        y = np.asarray(y)
+
+        if np.isscalar(s):
+            sizes = np.full_like(x, s, dtype=float)
+        else:
+            sizes = np.asarray(s)
+
+        # Handle color
+        brushes = None
+        if c is None:
+            # Use default marker color
+            kwargs_brush = self._handle_color({})
+            color = kwargs_brush.get('color', 'w')  # fallback to white
+            brushes = [color] * len(x)
+        elif isinstance(c, (str, tuple)) or (isinstance(c, np.ndarray) and c.ndim == 1 and np.issubdtype(c.dtype, np.str_)):
+            # Single or array of color names
+            brushes = c if np.iterable(c) else [c] * len(x)
+        else:
+            # Numeric array mapped to colormap
+            c = np.asarray(c)
+            norm = mcolors.Normalize(vmin=vmin if vmin is not None else np.min(c),
+                                    vmax=vmax if vmax is not None else np.max(c))
+            colormap = cm.get_cmap(cmap)
+            rgba_colors = colormap(norm(c))
+            brushes = [tuple((color[:3] * 255).astype(int)) for color in rgba_colors]
+
+        # Allow marker shape (symbol) and legend
+        kwargs_pen = {}
+        kwargs_pen.update(self._handle_color(kwargs))
+        kwargs_pen.update(self._handle_linestyle(kwargs))
+        kwargs_pen.update(self._handle_linewidth(kwargs))
+
+        spots = [{'pos': (x_, y_), 'size': s_, 'brush': b}
+                for x_, y_, s_, b in zip(x, y, sizes, brushes)]
+
+        scatter_item = ScatterPlotItem(spots=spots, **kwargs_pen)
+        self.addItem(scatter_item)
+        return scatter_item
 
     def axvline(self, x, **kwargs):
         """
@@ -217,19 +280,25 @@ class AxesWidget(pg.PlotWidget):
 
     def _handle_linestyle(self, kwargs):
         """Handle linestyle arguments and return modified kwargs_pen."""
+        from pyqtgraph.Qt import QtCore
+
         linestyle_mapping = {
-            '-': pg.QtCore.Qt.SolidLine,
-            '--': pg.QtCore.Qt.DashLine,
-            ':': pg.QtCore.Qt.DotLine,
-            '-.': pg.QtCore.Qt.DashDotLine,
+            '-': QtCore.Qt.SolidLine,
+            '--': QtCore.Qt.DashLine,
+            ':': QtCore.Qt.DotLine,
+            '-.': QtCore.Qt.DashDotLine,
         }
+
         kwargs_pen = kwargs.get('pen', {})  # Retrieve existing pen kwargs or initialize an empty dict
-        
+
         ls = kwargs.pop('linestyle', kwargs.pop('ls', '-'))
-        style = linestyle_mapping.get(ls, pg.QtCore.Qt.SolidLine)
+
+        if ls in ['', 'None', None]:
+            return None  # Signal that no line should be drawn
+
+        style = linestyle_mapping.get(ls, QtCore.Qt.SolidLine)
         kwargs_pen['style'] = style
         return kwargs_pen
-
     
     def _handle_linewidth(self, kwargs):
         """
@@ -514,9 +583,70 @@ class AxesWidget(pg.PlotWidget):
             raise NotImplementedError("Setting specific y-tick labels is not implemented yet.")
 
     
+    def fill_between(self, x, y1, y2=0, where=None, color=None, alpha=1.0, label=None, **kwargs):
+        """
+        Mimics matplotlib's fill_between using a QGraphicsPathItem.
 
+        Parameters:
+        - x: 1D array of x values
+        - y1: 1D array of y values (upper boundary)
+        - y2: 1D array or scalar (lower boundary, default 0)
+        - where: Optional boolean mask (fill only where True)
+        - color: Fill color (can be name or RGB tuple)
+        - alpha: Transparency (0.0 to 1.0)
+        - label: Optional legend label
+        - kwargs: Not used currently, reserved for future use
+        """
+        import numpy as np
+        from PyQt5.QtWidgets import QGraphicsPathItem
+        from PyQt5.QtGui import QPainterPath, QBrush, QPen, QColor
+        from PyQt5.QtCore import QPointF
+        from PyQt5 import QtCore
+
+        x = np.asarray(x)
+        y1 = np.asarray(y1)
+        y2 = np.asarray(y2 if not np.isscalar(y2) else np.full_like(y1, y2))
+
+        if where is not None:
+            mask = np.asarray(where)
+            x = x[mask]
+            y1 = y1[mask]
+            y2 = y2[mask]
+
+        if len(x) < 2:
+            return  # Not enough points to draw a region
+
+        # Create a QPainterPath
+        path = QPainterPath()
+        path.moveTo(QPointF(x[0], y2[0]))
+        for xi, yi in zip(x, y2):
+            path.lineTo(QPointF(xi, yi))
+        for xi, yi in zip(x[::-1], y1[::-1]):
+            path.lineTo(QPointF(xi, yi))
+        path.closeSubpath()
+
+        # Handle fill color and alpha
+        if color is None:
+            color = QColor(100, 100, 255)
+        else:
+            color = QColor(*color) if isinstance(color, (tuple, list)) else QColor(color)
+        color.setAlphaF(alpha)
+
+        brush = QBrush(color)
+        item = QGraphicsPathItem(path)
+        item.setBrush(brush)
+        item.setPen(QPen(QtCore.Qt.NoPen))
+
+        self.addItem(item)
+
+        # Add to legend if label is specified (if using custom legend support)
+        if label and hasattr(self, "_legend"):
+            self._legend.addItem(item, label)
+
+        return item
+    
+    
 # Usage can be similar, and extending this further will enhance its capabilities.
-
 def mpl_to_pg_cmap(mpl_cmap):
     """ Convert a Matplotlib colormap to a PyQTGraph colormap.
     Args:
@@ -617,13 +747,21 @@ if __name__ == "__main__":
     # Plot some data
     x = [0, 1, 2, 3, 4]
     y = [0, 1, 4, 9, 16]
-    curve = ax.plot(x, y, color='C1', linestyle='--', marker='+', markersize=10, lw=1, label='data')
+    curve = ax.plot(x, y, color='C1', linestyle='--', marker='+', markersize=1, lw=1, label='data')
+    axs[0,1].scatter(y,x, marker='x', color='r', ls='-')
     line = ax.axvline(2, color='k', linestyle='--', lw=1)
     txtitem = ax.text(2, 4, "Sample Text", color='red', transform='data', horizontal_alignment='left', va='bottom')
     ax.set_xlim(left=-1)
     ax.set_ylim(-1, top=20)
     ax.set_xticklabels([])
     ax.set_yticklabels([])
+    
+    import numpy as np
+    x = np.linspace(0, 10, 100)
+    y1 = np.sin(x)
+    y2 =0
+
+    ax.fill_between(x, y1, y2, color='green', alpha=0.1, label='Filled area')
     # ax.set_ylim(bottom=-1)
     
     print(ax.get_xlim())
