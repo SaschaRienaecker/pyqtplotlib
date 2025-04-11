@@ -154,33 +154,97 @@ class AxesWidget(pg.PlotWidget):
         self.addItem(scatter_item)
         return scatter_item
 
-    def axvline(self, x, **kwargs):
+    def axvline(self, x, ymin=None, ymax=None, **kwargs):
         """
-        Add a vertical line at position x using matplotlib-like syntax.
+        Add a vertical line at position x.
+        If ymin and ymax are specified, draw a finite line segment.
         """
+        from pyqtgraph import InfiniteLine, PlotDataItem
+        import numpy as np
+
         kwargs_pen = {}
         kwargs_pen.update(self._handle_color(kwargs))
         kwargs_pen.update(self._handle_linestyle(kwargs))
         kwargs_pen.update(self._handle_linewidth(kwargs))
-        
         pen = pg.mkPen(**kwargs_pen)
-        line = pg.InfiniteLine(pos=x, angle=90, pen=pen)
+
+        if ymin is not None and ymax is not None:
+            # Finite vertical line segment
+            line = PlotDataItem(x=np.array([x, x]), y=np.array([ymin, ymax]), pen=pen)
+        else:
+            # Infinite vertical line
+            line = InfiniteLine(pos=x, angle=90, pen=pen)
+
         self.addItem(line)
         return line
 
-    def axhline(self, y, **kwargs):
+    def axhline(self, y, xmin=None, xmax=None, **kwargs):
         """
-        Add a horizontal line at position y using matplotlib-like syntax.
+        Add a horizontal line at position y.
+        If xmin and xmax are specified, draw a finite line segment.
         """
+        from pyqtgraph import InfiniteLine, PlotDataItem
+        import numpy as np
+
         kwargs_pen = {}
         kwargs_pen.update(self._handle_color(kwargs))
         kwargs_pen.update(self._handle_linestyle(kwargs))
         kwargs_pen.update(self._handle_linewidth(kwargs))
-        
         pen = pg.mkPen(**kwargs_pen)
-        line = pg.InfiniteLine(pos=y, angle=0, pen=pen)
+
+        if xmin is not None and xmax is not None:
+            # Finite horizontal line segment
+            line = PlotDataItem(x=np.array([xmin, xmax]), y=np.array([y, y]), pen=pen)
+        else:
+            # Infinite horizontal line
+            line = InfiniteLine(pos=y, angle=0, pen=pen)
+
         self.addItem(line)
         return line
+    
+    def vlines(self, x, ymin, ymax, **kwargs):
+        """
+        Draw vertical lines at each x from ymin to ymax.
+
+        Parameters:
+        - x: scalar or array-like of x positions
+        - ymin, ymax: scalars or array-like of same shape as x
+        - kwargs: passed to axvline (e.g. color, linestyle, linewidth)
+        """
+        import numpy as np
+
+        x = np.atleast_1d(x)
+        ymin = np.broadcast_to(ymin, x.shape)
+        ymax = np.broadcast_to(ymax, x.shape)
+
+        items = []
+        for xi, y0, y1 in zip(x, ymin, ymax):
+            item = self.axvline(x=xi, ymin=y0, ymax=y1, **kwargs)
+            items.append(item)
+        
+        return items
+        
+    def hlines(self, y, xmin, xmax, **kwargs):
+        """
+        Draw horizontal lines at each y from xmin to xmax.
+
+        Parameters:
+        - y: scalar or array-like of y positions
+        - xmin, xmax: scalars or array-like of same shape as y
+        - kwargs: passed to axhline (e.g. color, linestyle, linewidth)
+        """
+        import numpy as np
+
+        y = np.atleast_1d(y)
+        xmin = np.broadcast_to(xmin, y.shape)
+        xmax = np.broadcast_to(xmax, y.shape)
+
+        items = []
+        for yi, x0, x1 in zip(y, xmin, xmax):
+            item = self.axhline(y=yi, xmin=x0, xmax=x1, **kwargs)
+            items.append(item)
+
+        return items
     
     def text(self, x, y, text, transform='data', **kwargs):
         """
@@ -586,6 +650,7 @@ class AxesWidget(pg.PlotWidget):
     def fill_between(self, x, y1, y2=0, where=None, color=None, alpha=1.0, label=None, **kwargs):
         """
         Mimics matplotlib's fill_between using a QGraphicsPathItem.
+        Supports optional 'where' masking with recursive-style segmented fill.
 
         Parameters:
         - x: 1D array of x values
@@ -595,28 +660,40 @@ class AxesWidget(pg.PlotWidget):
         - color: Fill color (can be name or RGB tuple)
         - alpha: Transparency (0.0 to 1.0)
         - label: Optional legend label
-        - kwargs: Not used currently, reserved for future use
+        - kwargs: Reserved for future use
         """
         import numpy as np
         from PyQt5.QtWidgets import QGraphicsPathItem
         from PyQt5.QtGui import QPainterPath, QBrush, QPen, QColor
-        from PyQt5.QtCore import QPointF
-        from PyQt5 import QtCore
+        from PyQt5.QtCore import QPointF, Qt
 
         x = np.asarray(x)
         y1 = np.asarray(y1)
         y2 = np.asarray(y2 if not np.isscalar(y2) else np.full_like(y1, y2))
 
+        # Handle segmented recursive-like fill when 'where' is provided
         if where is not None:
-            mask = np.asarray(where)
-            x = x[mask]
-            y1 = y1[mask]
-            y2 = y2[mask]
+            where = np.asarray(where, dtype=bool)
+            # Pad edges to catch transitions
+            padded = np.concatenate([[False], where, [False]])
+            edges = np.flatnonzero(padded[1:] != padded[:-1])
+            segments = list(zip(edges[::2], edges[1::2]))
 
+            items = []
+            for start, end in segments:
+                # Slice the arrays for this segment
+                xs = x[start:end]
+                y1s = y1[start:end]
+                y2s = y2[start:end]
+                # Recursively call fill_between without 'where'
+                item = self.fill_between(xs, y1s, y2s, None, color, alpha, label, **kwargs)
+                items.append(item)
+            return items
+
+        # Base case: fill the area between y1 and y2 without masking
         if len(x) < 2:
             return  # Not enough points to draw a region
 
-        # Create a QPainterPath
         path = QPainterPath()
         path.moveTo(QPointF(x[0], y2[0]))
         for xi, yi in zip(x, y2):
@@ -625,7 +702,7 @@ class AxesWidget(pg.PlotWidget):
             path.lineTo(QPointF(xi, yi))
         path.closeSubpath()
 
-        # Handle fill color and alpha
+        # Set up color and transparency
         if color is None:
             color = QColor(100, 100, 255)
         else:
@@ -635,11 +712,10 @@ class AxesWidget(pg.PlotWidget):
         brush = QBrush(color)
         item = QGraphicsPathItem(path)
         item.setBrush(brush)
-        item.setPen(QPen(QtCore.Qt.NoPen))
+        item.setPen(QPen(Qt.NoPen))
 
         self.addItem(item)
 
-        # Add to legend if label is specified (if using custom legend support)
         if label and hasattr(self, "_legend"):
             self._legend.addItem(item, label)
 
@@ -750,6 +826,10 @@ if __name__ == "__main__":
     curve = ax.plot(x, y, color='C1', linestyle='--', marker='+', markersize=1, lw=1, label='data')
     axs[0,1].scatter(y,x, marker='x', color='r', ls='-')
     line = ax.axvline(2, color='k', linestyle='--', lw=1)
+    line2 = axs[0,1].axvline(2, 1,2, color='r', linestyle='--', lw=5)
+    lines  = axs[0,1].vlines([0.5, 1.5], ymin=-1, ymax=1, color='cyan', linestyle='--', lw=5)
+    ax.hlines([1, 2], xmin=0, xmax=4, color='magenta', linewidth=2)
+
     txtitem = ax.text(2, 4, "Sample Text", color='red', transform='data', horizontal_alignment='left', va='bottom')
     ax.set_xlim(left=-1)
     ax.set_ylim(-1, top=20)
@@ -757,12 +837,15 @@ if __name__ == "__main__":
     ax.set_yticklabels([])
     
     import numpy as np
-    x = np.linspace(0, 10, 100)
-    y1 = np.sin(x)
-    y2 =0
 
-    ax.fill_between(x, y1, y2, color='green', alpha=0.1, label='Filled area')
-    # ax.set_ylim(bottom=-1)
+
+    x = np.linspace(0, 10, 500)
+    y1 = np.sin(x)
+    y2 = 0.3
+    mask = y1 > y2
+
+    ax.fill_between(x, y1, y2, where=mask, color='green', alpha=0.4)
+
     
     print(ax.get_xlim())
     print(ax.get_ylim())
