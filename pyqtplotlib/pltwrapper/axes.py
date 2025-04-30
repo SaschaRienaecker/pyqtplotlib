@@ -386,12 +386,13 @@ class AxesWidget(pg.PlotWidget):
             # Use color from kwargs_pen for consistency
             color = kwargs_pen.get('color', 'k')
             markeredgecolor = kwargs.pop('markeredgecolor', color)
-            markersize = kwargs.pop('markersize', kwargs.pop('ms', 8))
+            markersize = kwargs.pop('markersize', kwargs.pop('ms', 1))
 
             kwargs['symbol'] = symbol
             # kwargs['symbolBrush'] = pg.mkBrush(color)
-            kwargs['symbolPen'] = pg.mkPen(markeredgecolor, width=markersize)
-            # kwargs['size'] = kwargs.pop('markersize', kwargs.pop('ms', 8))
+            
+            mpl_to_pyqt_size_ratio = 8
+            kwargs['symbolPen'] = pg.mkPen(markeredgecolor, width=markersize / mpl_to_pyqt_size_ratio)
         return kwargs
 
     def _handle_legend_label(self, kwargs):
